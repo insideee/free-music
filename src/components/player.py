@@ -1,6 +1,6 @@
 import sys
 
-from PySide6.QtCore import QUrl, QSize, Qt, Slot, QTimer
+from PySide6.QtCore import QUrl, QSize, Qt, Slot, QTimer, QObject, QEvent, Signal
 from PySide6.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QToolButton, QProgressBar, QLabel, QSlider
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 from decimal import Decimal
@@ -51,7 +51,34 @@ class CustomSlider(QSlider):
             value = (self.maximum() - self.minimum()) * x / self.width() + self.minimum()
             self.setValue(value)
         else:
-            return super().mousePressEvent(self, e) 
+            return super().mousePressEvent(e) 
+  
+        
+class DurationSlider(CustomSlider):
+    
+    update_playback = Signal(int)
+    
+    def __init__(self, orientation, parent):
+        super(DurationSlider, self).__init__(orientation, parent)
+        
+        self._timer = QTimer()
+        
+    def update_maximum(self, value: int):
+        self.setMaximum(value)
+        
+    def update_value(self, value: int):
+        self.setValue(value)
+    
+    def mousePressEvent(self, e):
+        if e.button() == Qt.LeftButton:
+            e.accept()
+            x = e.pos().x()
+            value = (self.maximum() - self.minimum()) * x / self.width() + self.minimum()
+            self.setValue(value)
+            self.update_playback.emit(self.value())
+        else:
+            return super().mousePressEvent(e)
+
 
 class Player(QFrame):
 
@@ -163,20 +190,10 @@ class Player(QFrame):
         self._duration_label.setStyleSheet('color: #565C67')
         self._duration_layout.addWidget(self._duration_label)
 
-        self._duration_progress = QProgressBar(self._duration_container)
+        self._duration_progress = DurationSlider(Qt.Horizontal, self._duration_container)
         self._duration_progress.setObjectName("duration_progress")
         self._duration_progress.setMaximumSize(QSize(16777215, 5))
-        self._duration_progress.setStyleSheet("""QProgressBar {
-                                                    background-color: #565C67;
-                                                    color: rgba(200, 200, 200, 0);
-	                                                border: none;
-                                                    border-radius: 2px;
-                                                    }
-                                                QProgressBar::chunk {
-	                                                background-color: #3B89EE;
-	                                                border: none;
-                                                    border-radius: 2px;
-                                                }""")
+        self._duration_progress.update_playback.connect(self._update_playback)
         self._duration_layout.addWidget(self._duration_progress)
         
         # volume
@@ -237,15 +254,27 @@ class Player(QFrame):
     def _set_duration(self):
         if (self._player.duration() > 0 or self._playlist_length() <= 0):
             self._duration = self._player.duration()
-            self._duration_progress.setRange(0, self._duration / 1000)
+            self._duration_progress.update_maximum(int(self._duration / 1000))
 
     def _update_duration_label(self):
         self._label_duration += Decimal(0.001)
         if(str(self._label_duration)[2] == '6'):
             self._label_duration += Decimal(.40)
-        self._duration_progress.setValue(self._player.position() / 1000)
+        self._duration_progress.update_value(int(self._player.position() / 1000))
         self._duration_label.setText(
             f'{str(self._label_duration)[0]}:{str(self._label_duration)[2]}{str(self._label_duration)[3]}')
+        
+    def _update_playback(self, value: int):
+        self._player.setPosition(value * 1000)
+        value_to_label = Decimal(value / 100)
+        if(len(str(value_to_label)) >= 3):
+            if(str(value_to_label)[2] >= '6'):
+                value_to_label += Decimal(.40)
+                self._duration_label.setText(f'{str(value_to_label)[0]}:{str(value_to_label)[2]}{str(value_to_label)[3]}')
+        else:
+            self._duration_label.setText(f'{str(value_to_label)[0]}:00')
+        self._label_duration = value_to_label
+        
 
     @Slot()
     def _play_btn_clicked(self, state):
@@ -300,5 +329,5 @@ class Player(QFrame):
         self._timer.stop()
         self._timer.setInterval(100)
         self._timer.start()
-        self._duration_progress.setValue(0)        
+        self._duration_progress.update_value(0)        
         self._duration_label.setText('0:00')
