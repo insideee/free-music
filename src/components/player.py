@@ -60,7 +60,7 @@ class DurationSlider(CustomSlider):
     
     def __init__(self, orientation, parent):
         super(DurationSlider, self).__init__(orientation, parent)
-        
+        self.setMaximum(0)
         self._timer = QTimer()
         
     def update_maximum(self, value: int):
@@ -111,6 +111,8 @@ class Player(QFrame):
         self._player.playbackStateChanged.connect(
             lambda: self._update_buttons(self._player.playbackState()))
         self._player.playbackStateChanged.connect(self._play_next_track)
+        self._player.playbackStateChanged.connect(
+            lambda: self._stop_timer(self._player.playbackState()))
         
         # info
         self._info_container = QFrame(self)
@@ -221,12 +223,14 @@ class Player(QFrame):
         self._volume_slider.setValue(int(self._audio_output.volume() * 100))
         self._volume_slider.valueChanged.connect(lambda: self._change_volume(self._volume_slider.value()/100))
         self._volume_layout.addWidget(self._volume_slider)
-
-    def add_to_playlist(self, url: QUrl):
+        
+    def add_to_playlist(self, url: QUrl, play: bool=False):
         self._playlist.append(url)
         if(self._playlist_index == -1):
             self._playlist_index = 0
             self._player.setSource(self._playlist[self._playlist_index])
+        if(self._player.playbackState() == QMediaPlayer.StoppedState or self._player.playbackState() == QMediaPlayer.PausedState): 
+            self._play_btn_clicked(QMediaPlayer.StoppedState)
 
     def remove_from_playlist(self, url: QUrl):
         try:
@@ -318,16 +322,21 @@ class Player(QFrame):
 
     @Slot()
     def _play_next_track(self):
-        if(self._duration > 0 and self._duration == self._player.position()):
+        if(self._duration > 0 and self._duration <= self._player.position()+50 and self._playlist_index < self._playlist_length()-1):
             self._play_next()
+            
+    def _stop_timer(self, state):
+        if(state == self._player.StoppedState and self._playlist_index == self._playlist_length()-1):
+            self._reset_label_duration(stop=True)
      
     def _change_volume(self, volume: float):
         self._audio_output.setVolume(volume)
            
-    def _reset_label_duration(self):
+    def _reset_label_duration(self, stop=False):
         self._label_duration = Decimal(0.00)
         self._timer.stop()
         self._timer.setInterval(100)
-        self._timer.start()
+        if(not stop):
+            self._timer.start()
         self._duration_progress.update_value(0)        
         self._duration_label.setText('0:00')

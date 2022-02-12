@@ -5,6 +5,7 @@
     <file>./images/next.svg</file>
     <file>./images/previous.svg</file>
     <file>./images/sound.svg</file>
+    <file>./images/search.svg</file>
     <file>./fonts/IBMPlexSansThaiLooped-Regular.ttf</file>
     </qresource>
 </RCC>

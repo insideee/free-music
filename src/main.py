@@ -1,28 +1,49 @@
 import sys
+import shutil
 
-from PySide6.QtWidgets import QApplication, QMainWindow, QVBoxLayout
-from PySide6.QtCore import QSize, QUrl, Qt
-from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
+from PySide6.QtWidgets import QApplication, QMainWindow
+from PySide6.QtCore import QUrl
+from PySide6.QtGui import QMouseEvent, QCloseEvent
 
-from components import Player
+from downloader import Downloader
 from resources import resource
+import ui
 
 
 class App(QMainWindow):
     def __init__(self):
         super(App, self).__init__()
-        self.setMinimumSize(QSize(1200, 750)) 
-        self.setStyleSheet("background-color: #003847") 
+        self._ui =  ui.AppUi()
+        self._ui.init_gui(self)
         
-        self.source = QUrl.fromLocalFile("/home/inside/Música/gototown.mp3")
-        self.player = Player(self)
-        self.player.add_to_playlist(self.source)
-        self.source = QUrl.fromLocalFile("/home/inside/Música/doja_cat_all_nighter.mp3")
-        self.player.add_to_playlist(self.source)      
+        self._downloader = Downloader()
+        self._downloader.download_completed.connect(self._download_receiver)
+        self._downloader.update_title('Doja cat Say So')
+        self._downloader.start()
         
-    def print_duration(self):
-        print(self.player.duration())
+        self._source = None
+        
+    def mousePressEvent(self, event: QMouseEvent) -> None:
 
+        # remove cursor when search lose focus
+        focus_widget = QApplication.focusWidget()
+
+        if hasattr(focus_widget, 'objectName'):
+            if focus_widget.objectName() == 'search_entry':
+                focus_widget.clearFocus()
+
+        return super().mousePressEvent(event)
+    
+    def _download_receiver(self, url: QUrl):
+        self._source = url
+        
+        if(self._source != None):
+            self._ui.player.add_to_playlist(self._source)
+            
+    def closeEvent(self, event: QCloseEvent) -> None:
+        if(self._downloader._path != None):
+            shutil.rmtree(self._downloader._path)
+        return super().closeEvent(event)
 
 if __name__ == "__main__": 
     app = QApplication(sys.argv)
