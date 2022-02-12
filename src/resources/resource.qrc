@@ -1,0 +1,10 @@
+<RCC>
+    <qresource>
+    <file>./images/play.svg</file>
+    <file>./images/pause.svg</file>
+    <file>./images/next.svg</file>
+    <file>./images/previous.svg</file>
+    <file>./images/sound.svg</file>
+    <file>./fonts/IBMPlexSansThaiLooped-Regular.ttf</file>
+    </qresource>
+</RCC>
