@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QVBoxLayout, QStackedWidget, QLabel, QLineEdit
 from PySide6.QtCore import QSize, Qt
 
-from components import Player
+from components import Player, SearchPage
 import utils
 
 class AppUi(object):
@@ -41,7 +41,7 @@ class AppUi(object):
         self.search_container.setObjectName('search_container')
         self.search_container.setMinimumHeight(70)
         self.search_container.setMaximumHeight(70)
-        self.search_container.setStyleSheet('background-color: none')
+        self.search_container.setStyleSheet('background-color: none;')
         self.search_layout = QHBoxLayout(self.search_container)
         self.search_layout.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.search_layout.setSpacing(10)
@@ -66,12 +66,16 @@ class AppUi(object):
                                         background-color: rgba(0, 0, 0, 0)')
         self.search_layout.addWidget(self.search_entry)
         
-        
-        # display container
+        # display container        
         self.display_container = QStackedWidget(self.content_container)
         self.display_container.setObjectName('display_container')
         self.display_container.setMinimumHeight(620)
+        self.display_container.setContentsMargins(0, 0, 0, 0)
         self.display_container.setStyleSheet('background-color: none')
+        
+        self.search_page = SearchPage(self.display_container)
+        self.display_container.addWidget(self.search_page)
+        self.display_container.setCurrentWidget(self.search_page)
         
         self.player = Player(self.content_container)
         

@@ -6,6 +6,10 @@
     <file>./images/previous.svg</file>
     <file>./images/sound.svg</file>
     <file>./images/search.svg</file>
+    <file>./images/favorite.svg</file>
+    <file>./images/plus.svg</file>
+    <file>./images/play_btn.svg</file>
     <file>./fonts/IBMPlexSansThaiLooped-Regular.ttf</file>
+    <file>./fonts/IBMPlexSansThaiLooped-Medium.ttf</file>
     </qresource>
 </RCC>

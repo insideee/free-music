@@ -13,8 +13,10 @@ def load_svg(path: str, size: QSize):
     painter.end()
     return new_image
 
-def set_font(target: QObject, size: int, font_name: str=':/fonts/IBMPlexSansThaiLooped-Regular.ttf', bold: bool=False, index: int=0) -> None:
-
+def set_font(target: QObject, size: int, medium=False, bold: bool=False) -> None:
+    font_name = ':/fonts/IBMPlexSansThaiLooped-Regular.ttf' if not medium else ':/fonts/IBMPlexSansThaiLooped-Medium.ttf'
+    index = 0 if not medium else 1
+    
     # add font to app database
     font_id = QFontDatabase.addApplicationFont(f'{font_name}')
     font_name = QFontDatabase.applicationFontFamilies(font_id)

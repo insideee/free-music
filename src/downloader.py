@@ -6,12 +6,13 @@ import tempfile
 
 class Downloader(QThread):
     
-    download_completed = Signal(QUrl)
+    download_completed = Signal(list)
     
     def __init__(self):
         super(Downloader, self).__init__()
         self._title = None
         self._path = None  
+        self._emit_play = False
         
     def run(self):
         print('Thread Working')
@@ -31,7 +32,12 @@ class Downloader(QThread):
                 ydl.download([url_video])
             
             file_path = QUrl.fromLocalFile(f'{self._path}/{title_video}.mp3')
-            self.download_completed.emit(file_path)
+            if(self._emit_play):
+                self.download_completed.emit([file_path, True])
+                self._emit_play = False
+            else:
+                self.download_completed.emit([file_path, False])
+                
             
     def _search_video(self, title):
         video_search = VideosSearch(title, limit=1)
@@ -48,3 +54,6 @@ class Downloader(QThread):
     
     def update_title(self, title):
         self._title = title
+        
+    def update_emit_play(self, emit: bool):
+        self._emit_play = emit

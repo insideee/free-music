@@ -231,6 +231,12 @@ class Player(QFrame):
             self._player.setSource(self._playlist[self._playlist_index])
         if(self._player.playbackState() == QMediaPlayer.StoppedState or self._player.playbackState() == QMediaPlayer.PausedState): 
             self._play_btn_clicked(QMediaPlayer.StoppedState)
+            
+        if(play):
+            self._playlist_index = self._playlist_length() -1
+            self._player.setSource(self._playlist[self._playlist_index])
+            self._player.play()
+            self._reset_label_duration()
 
     def remove_from_playlist(self, url: QUrl):
         try:
@@ -302,12 +308,10 @@ class Player(QFrame):
     def _play_previous(self):
         if(self._player.position() <= 5000 and self._playlist_index > 0):
             self._playlist_index -= 1
-            self._player.pause()
             self._player.setSource(self._playlist[self._playlist_index])
             self._player.play()
         else:
             self._player.setPosition(0)
-            self._player.pause()
             self._player.play()
         self._reset_label_duration()
 
