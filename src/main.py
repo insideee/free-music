@@ -17,6 +17,9 @@ class App(QMainWindow):
         self._ui =  ui.AppUi()
         self._ui.init_gui(self)
         
+        self._sender = None
+        self._music_obj = None
+        
         self._search = Search()
         self._search.response_received.connect(self._search_response_received)
         
@@ -38,9 +41,13 @@ class App(QMainWindow):
         return super().mousePressEvent(event)
     
     def _download_receiver(self, data_list: list):
+        data_list.append(self._music_obj)
         self._ui.player.add_to_playlist(*data_list)
+        if(self._sender != None and self._sender.loading):
+            self._sender.stop_loading()
             
     def closeEvent(self, event: QCloseEvent) -> None:
+        print('closing')
         if(self._downloader._path != None):
             shutil.rmtree(self._downloader._path)   
         if(self._search.path != None):
@@ -48,17 +55,20 @@ class App(QMainWindow):
         return super().closeEvent(event)
     
     def make_search(self):
+        self._ui.search_loading.show()
         self._ui.search_entry.clearFocus()
         self._search.update_query(self._ui.search_entry.text())
         self._search.start()
     
     def _search_response_received(self, response: list):
         print('finished')
+        self._ui.search_loading.close()
         self._ui.search_page.update_search_page(response)
         self._ui.display_container.setCurrentWidget(self._ui.search_page)
         
-    def _play_requested(self, info):
-        self._downloader.update_title(info)
+    def _play_requested(self, data):
+        self._music_obj, self._sender = data
+        self._downloader.update_title(self._music_obj.title)
         self._downloader.update_emit_play(True)
         self._downloader.start()
 

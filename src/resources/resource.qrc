@@ -9,6 +9,9 @@
     <file>./images/favorite.svg</file>
     <file>./images/plus.svg</file>
     <file>./images/play_btn.svg</file>
+    <file>./images/loading.svg</file>
+    <file>./images/logo.svg</file>
+    <file>./images/icon.png</file>
     <file>./fonts/IBMPlexSansThaiLooped-Regular.ttf</file>
     <file>./fonts/IBMPlexSansThaiLooped-Medium.ttf</file>
     </qresource>

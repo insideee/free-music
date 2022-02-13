@@ -2,6 +2,8 @@ from datetime import timedelta
 from PySide6.QtWidgets import QFrame, QScrollArea, QVBoxLayout, QWidget, QLabel, QSizePolicy, QHBoxLayout, QToolButton
 from PySide6.QtCore import Qt, QSize, Signal
 from PySide6.QtGui import QPixmap
+from PySide6.QtSvgWidgets import QSvgWidget
+import schemas
 import requests
 import tempfile
 import utils
@@ -9,13 +11,14 @@ import utils
 
 class SearchPage(QFrame):
     
-    play_request = Signal(str)
+    play_request = Signal(list)
 
     def __init__(self, parent) -> None:
         super(SearchPage, self).__init__(parent=parent)
         self.setStyleSheet('background-color: rgba(0, 0, 0, 0); border: none;')
         
         self.entry_list = []
+        self._sender = None
 
         self._main_layout = QVBoxLayout(self)
         self._main_layout.setSpacing(0)
@@ -58,19 +61,6 @@ class SearchPage(QFrame):
 
         self._results_scroll.setWidget(self._results_area)
         self._main_layout.addWidget(self._results_scroll)
-
-        
-        # data_test = {
-        #             'title': 'Need to Know',
-        #             'artist': 'Doja Cat',
-        #             'album_title': 'Planet Her',
-        #             'album_cover_url': 'https://e-cdns-images.dzcdn.net/images/cover/1e012b5bba83edac911b09ca1ab29e1e/56x56-000000-80-0-0.jpg',
-        #             'path': tempfile.mkdtemp(),
-        #             'duration': 151
-        #             }
-        # for i in range(1,20): 
-        #     object = MusicEntry(**data_test)
-        #     self._results_layout.addWidget(object)
             
     def update_search_page(self, data_list: list):
         if(len(self.entry_list) > 0):
@@ -84,34 +74,37 @@ class SearchPage(QFrame):
         
         if(len(data_list) > 0):
             for data in data_list:
-                object = MusicEntry(**data.dict())
+                object = MusicEntry(data)
                 self.entry_list.append(object)
                 
             for entry in self.entry_list:
                 entry.info.connect(self._play_clicked)
                 self._results_layout.addWidget(entry)
                 
-    def _play_clicked(self, info):
-        self.play_request.emit(info)
+    def _play_clicked(self, music_obj):
+        self._sender = self.sender()
+        self.play_request.emit([music_obj, self._sender])
 
 
 class MusicEntry(QFrame):
     
-    info = Signal(str)
+    info = Signal(schemas.MusicSchema)
 
-    def __init__(self, **kwargs):
+    def __init__(self, music_obj):
         super(MusicEntry, self).__init__()
         self.setMinimumHeight(60)
         self.setMaximumHeight(60)
         self.setStyleSheet('background-color: rgba(22, 28, 38, 0.6)')
         
-        self.title = kwargs['title']
-        self.artist = kwargs['artist'] if len(kwargs['artist']) <= 15 else kwargs['artist'][:15]+'...'
-        self.album_title = kwargs['album_title'] if len(kwargs['album_title']) <= 17 else kwargs['album_title'][:17]+'...'
-        self.path = kwargs['album_cover']
-        self.cover = kwargs['album_cover']
-        self.duration = self.convert_duration(kwargs['duration'])
+        self.music_obj = music_obj
+        self.title = music_obj.title if len(music_obj.title) <= 30 else music_obj.title[:30]+'...'
+        self.artist = music_obj.artist if len(music_obj.artist) <= 15 else music_obj.artist[:15]+'...'
+        self.album_title = music_obj.album_title if len(music_obj.album_title) <= 17 else music_obj.album_title[:17]+'...'
+        self.path = music_obj.album_cover
+        self.cover = music_obj.album_cover
+        self.duration = self.convert_duration(music_obj.duration)
         self._tranparency_style = 'background-color: rgba(0, 0, 0, 0)'
+        self.loading = False
 
         self._main_layout = QHBoxLayout(self)
         self._main_layout.setSpacing(0)
@@ -220,11 +213,19 @@ class MusicEntry(QFrame):
         self._play_btn.setIconSize(QSize(30, 30))
         self._play_btn.setCursor(Qt.PointingHandCursor)
         self._play_btn.clicked.connect(self.send_info)
+        self._play_btn.clicked.connect(self._init_loading)
         self._play_layout.addWidget(self._play_btn)
+        
+        self._loading_widget = QSvgWidget(':/images/loading.svg')
+        self._loading_widget.setMinimumSize(QSize(30, 30))
+        self._loading_widget.setMaximumSize(QSize(30, 30))
+        self._play_layout.addWidget(self._loading_widget)
+        self._loading_widget.close()
     
     def enterEvent(self, event) -> None:
         self.setStyleSheet('background-color: rgba(22, 28, 38, 0.7)')
-        self._play_btn.show()        
+        if(not self.loading):
+            self._play_btn.show()        
         return super().enterEvent(event)
     
     def leaveEvent(self, event) -> None:
@@ -236,4 +237,18 @@ class MusicEntry(QFrame):
         return str(timedelta(seconds=seconds))[2:]
     
     def send_info(self):
-        self.info.emit(f'{self.title} - {self.artist}')
+        self.info.emit(self.music_obj)
+        #self.info.emit(f'{self.title} - {self.artist}')
+        
+    def update_loading(self, value: bool):
+        self.loading = value
+        
+    def _init_loading(self):
+        self.loading = True
+        self._play_btn.close()
+        self._loading_widget.show()
+        
+    def stop_loading(self):
+        self.loading = False
+        if not(self._loading_widget.isHidden()):
+            self._loading_widget.close()

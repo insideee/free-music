@@ -64,10 +64,16 @@ class Search(QThread):
         return a
     
     def download_cover(self, album_cover_url, album_title):
-        r = requests.get(album_cover_url, allow_redirects=True)
-        save_path = f'{self.path}/{album_title}.jpg'
-        open(save_path, 'wb').write(r.content)
+        if(album_cover_url != None):
+            r = requests.get(album_cover_url, allow_redirects=True)
+            album_title = album_title.replace('/', '')
+            album_title = album_title.replace(' ', '')
+            save_path = f'{self.path}/{album_title}.jpg'
+            open(save_path, 'wb').write(r.content)
 
-        return QPixmap(save_path)
+            return QPixmap(save_path)
+        else:
+            # default image for no calbum cover
+            return QPixmap('default_cover')
     
     
