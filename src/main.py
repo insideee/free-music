@@ -2,7 +2,6 @@ import sys
 import shutil
 
 from PySide6.QtWidgets import QApplication, QMainWindow
-from PySide6.QtCore import QUrl
 from PySide6.QtGui import QMouseEvent, QCloseEvent
 
 from downloader import Downloader
@@ -68,7 +67,7 @@ class App(QMainWindow):
         
     def _play_requested(self, data):
         self._music_obj, self._sender = data
-        self._downloader.update_title(self._music_obj.title)
+        self._downloader.update_title(f'{self._music_obj.title} - {self._music_obj.artist}')
         self._downloader.update_emit_play(True)
         self._downloader.start()
 

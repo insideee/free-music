@@ -1,11 +1,8 @@
 from datetime import timedelta
-from PySide6.QtWidgets import QFrame, QScrollArea, QVBoxLayout, QWidget, QLabel, QSizePolicy, QHBoxLayout, QToolButton
+from PySide6.QtWidgets import QFrame, QScrollArea, QVBoxLayout, QWidget, QLabel, QHBoxLayout, QToolButton
 from PySide6.QtCore import Qt, QSize, Signal
-from PySide6.QtGui import QPixmap
 from PySide6.QtSvgWidgets import QSvgWidget
 import schemas
-import requests
-import tempfile
 import utils
 
 
@@ -238,7 +235,6 @@ class MusicEntry(QFrame):
     
     def send_info(self):
         self.info.emit(self.music_obj)
-        #self.info.emit(f'{self.title} - {self.artist}')
         
     def update_loading(self, value: bool):
         self.loading = value

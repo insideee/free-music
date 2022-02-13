@@ -1,5 +1,3 @@
-import sys
-
 from PySide6.QtCore import QUrl, QSize, Qt, Slot, QTimer, QObject, QEvent, Signal
 from PySide6.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QToolButton, QGridLayout, QLabel, QSlider
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput

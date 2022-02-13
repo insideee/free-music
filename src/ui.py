@@ -1,5 +1,5 @@
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QVBoxLayout, QStackedWidget, QLabel, QLineEdit, QGridLayout
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QVBoxLayout, QStackedWidget, QLabel, QLineEdit, QGridLayout, QPushButton, QSizePolicy, QToolButton
+from PySide6.QtCore import QSize, Qt, QPropertyAnimation, QEasingCurve, QAbstractAnimation, QPoint, QRect
 from PySide6.QtSvgWidgets import QSvgWidget
 from PySide6.QtGui import QPixmap
 
@@ -7,6 +7,7 @@ from components import Player, SearchPage
 import utils
 
 class AppUi(object):
+    
     def init_gui(self, app):
         
         # app config
@@ -47,7 +48,10 @@ class AppUi(object):
         self.logo = QSvgWidget(':/images/logo.svg')
         self.logo.setFixedSize(QSize(100, 40))
         self.logo_layout.addWidget(self.logo)
-         
+        
+        self._buttons_nav_config()
+        
+        # content container
         self.content_container = QFrame(self.container)
         self.content_container.setObjectName('content_container')
         self.content_container.setStyleSheet('background-color: #003847')
@@ -111,3 +115,125 @@ class AppUi(object):
         self.content_layout.addWidget(self.player)
         
         app.setCentralWidget(self.container)
+        
+    def _buttons_nav_config(self):
+        self.music_container = QFrame(self.nav_container)
+        self.music_container.setMaximumSize(165, 200)
+        self.music_container.setMinimumSize(165, 200)
+        self.music_container.setStyleSheet('background-color: none')
+        self.nav_layout.addWidget(self.music_container)
+        self.music_layout = QVBoxLayout(self.music_container)
+        self.music_layout.setSpacing(2)
+        self.music_layout.setContentsMargins(15, 25, 0, 0)
+        self.music_layout.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        
+        self.music_title_btn = CustomButtom(parent=self.music_container, text='music', title=True)
+        self.music_title_btn.clicked.connect(lambda: self._nav_container_animation(self.music_container))
+        self.music_layout.addWidget(self.music_title_btn)
+        
+        self.discover_btn = CustomButtom(parent=self.music_container, text='discover',
+                                         geometry=QRect(QPoint(self.music_container.pos()+QPoint(15, 60)), 
+                                                        QSize(QSize(80, 20))))  
+        self.rising_btn = CustomButtom(parent=self.music_container, text='rising',
+                                         geometry=QRect(QPoint(self.music_container.pos()+QPoint(15, 80)), 
+                                                        QSize(QSize(80, 20))))       
+        self.my_stars_btn = CustomButtom(parent=self.music_container, text='my stars',
+                                         geometry=QRect(QPoint(self.music_container.pos()+QPoint(15, 100)), 
+                                                        QSize(QSize(80, 20))))
+        self.songs_btn = CustomButtom(parent=self.music_container, text='songs',
+                                         geometry=QRect(QPoint(self.music_container.pos()+QPoint(15, 130)), 
+                                                        QSize(QSize(80, 20))))
+        self.artists_btn = CustomButtom(parent=self.music_container, text='artists',
+                                         geometry=QRect(QPoint(self.music_container.pos()+QPoint(15, 150)), 
+                                                        QSize(QSize(80, 20))))
+        self.albuns_btn = CustomButtom(parent=self.music_container, text='albuns',
+                                         geometry=QRect(QPoint(self.music_container.pos()+QPoint(15, 170)), 
+                                                        QSize(QSize(80, 20))))
+
+        # playlists
+        self.playlists_container = QFrame(self.nav_container)
+        self.playlists_container.setMaximumSize(165, 200)
+        self.playlists_container.setMinimumSize(165, 200)
+        self.playlists_container.setStyleSheet('background-color: none')
+        self.nav_layout.addWidget(self.playlists_container)
+        self.playlists_layout = QVBoxLayout(self.playlists_container)
+        self.playlists_layout.setSpacing(2)
+        self.playlists_layout.setContentsMargins(15, 0, 15, 0)
+        self.playlists_layout.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        
+        self.playlist_header = QFrame(self.playlists_container)
+        self.playlist_header.setFixedSize(QSize(165, 60))
+        self.playlists_layout.addWidget(self.playlist_header)
+        
+        self.playlist_header_layout = QHBoxLayout(self.playlist_header)
+        self.playlist_header_layout.setSpacing(0)
+        self.playlist_header_layout.setContentsMargins(0, 0, 0, 0)
+        self.playlist_header_layout.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        
+        self.playlist_title_btn = CustomButtom(parent=self.playlist_header, text='playlists', title=True)
+        self.playlist_header_layout.addWidget(self.playlist_title_btn)
+        self.playlist_title_btn.clicked.connect(lambda: self._nav_container_animation(self.playlists_container))
+        
+        self.add_playlist_btn = QToolButton(self.playlist_header)
+        self.add_playlist_btn.setIcon(utils.load_svg(':/images/plus.svg', size=QSize(16, 16)))
+        self.add_playlist_btn.setStyleSheet('background-color: rgba(0, 0, 0, 0);\
+                                            border: none;\
+                                            border-radius: none')
+        self.add_playlist_btn.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        self.add_playlist_btn.setCursor(Qt.PointingHandCursor)
+        self.add_playlist_btn.setFixedSize(QSize(16, 16))
+        self.playlist_header_layout.addWidget(self.add_playlist_btn)
+        
+    def _nav_container_animation(self, frame: QFrame):
+        height = frame.height()
+        standard = 200
+        extend = standard if height < standard else 60
+        
+        frame.animation = QPropertyAnimation(frame, b'minimumHeight')
+        frame.animation.setDuration(400)
+        frame.animation.setStartValue(height)
+        frame.animation.setEndValue(extend)
+        frame.animation.setEasingCurve(QEasingCurve.InOutQuad)
+        frame.animation.start(QAbstractAnimation.DeleteWhenStopped)
+        
+        
+class CustomButtom(QPushButton):
+    
+    def __init__(self, parent, text, geometry: QRect = None, title: bool = False):
+        super(CustomButtom, self).__init__(parent=parent)
+        if geometry != None:
+            self.setGeometry(geometry)
+        self._title = title
+        
+        self.setLayout(QVBoxLayout())
+        self.layout().setContentsMargins(0, 0, 0, 0)
+        size = QSize(80, 20) if not self._title else QSize(120, 30)
+        self.setFixedSize(size)  
+        self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+        self.setCursor(Qt.PointingHandCursor)
+        self.setStyleSheet('background-color: rgba(0, 0, 0, 0); \
+                                            border: none; \
+                                            border-radius: none')
+        
+        self._title_label = QLabel(text.capitalize()) if not self._title else QLabel(text.upper())
+        self._title_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self._title_label.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+        
+        if self._title:
+            self._title_label.setStyleSheet('color: #909090')
+            utils.set_font(self._title_label, size=11, medium=True)
+        else:
+            self._title_label.setStyleSheet('color: #565C67')
+            utils.set_font(self._title_label, size=11)
+        self.layout().addWidget(self._title_label)
+        
+            
+    def enterEvent(self, event) -> None:
+        if not self._title:
+            self._title_label.setStyleSheet('color: #909090')        
+        return super().enterEvent(event)
+    
+    def leaveEvent(self, event) -> None:
+        if not self._title:
+            self._title_label.setStyleSheet('color: #565C67')  
+        return super().leaveEvent(event)
