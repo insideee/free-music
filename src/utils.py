@@ -1,6 +1,8 @@
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtCore import Qt, QSize, QObject
 from PySide6.QtGui import QPixmap, QPainter, QFontDatabase, QFont
+import requests
+import os
 
 def load_svg(path: str, size: QSize):
     svg_render = QSvgRenderer(path)   
@@ -28,3 +30,17 @@ def set_font(target: QObject, size: int, medium=False, bold: bool=False) -> None
     font.setStyleStrategy(QFont.PreferAntialias)
     
     target.setFont(font)
+    
+def download_cover(cls, album_cover_url, album_title, playlist_cover=False):
+        if(album_cover_url != None):
+            album_title = album_title.replace('/', '')
+            album_title = album_title.replace(' ', '')
+            save_path = f'{cls.path}/{album_title}.jpg' if not playlist_cover else f'{cls.path}/{album_title}_playlist.jpg'
+            if not (os.path.isfile(save_path)):
+                r = requests.get(album_cover_url, allow_redirects=True)
+                open(save_path, 'wb').write(r.content)
+
+            return QPixmap(save_path)
+        else:
+            # default image for no album cover
+            return QPixmap(':/images/default_cover.png')

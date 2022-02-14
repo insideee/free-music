@@ -54,7 +54,7 @@ class AppUi(object):
         # content container
         self.content_container = QFrame(self.container)
         self.content_container.setObjectName('content_container')
-        self.content_container.setStyleSheet('background-color: #003847')
+        self.content_container.setStyleSheet('background-color: rgba(22, 28, 38, 0.6)')
         self.container_layout.addWidget(self.content_container)
         self.content_layout = QVBoxLayout(self.content_container)
         self.content_layout.setAlignment(Qt.AlignBottom)
@@ -118,8 +118,8 @@ class AppUi(object):
         
     def _buttons_nav_config(self):
         self.music_container = QFrame(self.nav_container)
-        self.music_container.setMaximumSize(165, 200)
-        self.music_container.setMinimumSize(165, 200)
+        self.music_container.setMaximumSize(165, 220)
+        self.music_container.setMinimumSize(165, 220)
         self.music_container.setStyleSheet('background-color: none')
         self.nav_layout.addWidget(self.music_container)
         self.music_layout = QVBoxLayout(self.music_container)
@@ -132,28 +132,28 @@ class AppUi(object):
         self.music_layout.addWidget(self.music_title_btn)
         
         self.discover_btn = CustomButtom(parent=self.music_container, text='discover',
-                                         geometry=QRect(QPoint(self.music_container.pos()+QPoint(15, 60)), 
+                                         geometry=QRect(QPoint(self.music_container.pos()+QPoint(15, 65)), 
                                                         QSize(QSize(80, 20))))  
         self.rising_btn = CustomButtom(parent=self.music_container, text='rising',
-                                         geometry=QRect(QPoint(self.music_container.pos()+QPoint(15, 80)), 
+                                         geometry=QRect(QPoint(self.music_container.pos()+QPoint(15, 90)), 
                                                         QSize(QSize(80, 20))))       
         self.my_stars_btn = CustomButtom(parent=self.music_container, text='my stars',
-                                         geometry=QRect(QPoint(self.music_container.pos()+QPoint(15, 100)), 
+                                         geometry=QRect(QPoint(self.music_container.pos()+QPoint(15, 115)), 
                                                         QSize(QSize(80, 20))))
         self.songs_btn = CustomButtom(parent=self.music_container, text='songs',
-                                         geometry=QRect(QPoint(self.music_container.pos()+QPoint(15, 130)), 
-                                                        QSize(QSize(80, 20))))
-        self.artists_btn = CustomButtom(parent=self.music_container, text='artists',
                                          geometry=QRect(QPoint(self.music_container.pos()+QPoint(15, 150)), 
                                                         QSize(QSize(80, 20))))
+        self.artists_btn = CustomButtom(parent=self.music_container, text='artists',
+                                         geometry=QRect(QPoint(self.music_container.pos()+QPoint(15, 175)), 
+                                                        QSize(QSize(80, 20))))
         self.albuns_btn = CustomButtom(parent=self.music_container, text='albuns',
-                                         geometry=QRect(QPoint(self.music_container.pos()+QPoint(15, 170)), 
+                                         geometry=QRect(QPoint(self.music_container.pos()+QPoint(15, 200)), 
                                                         QSize(QSize(80, 20))))
 
         # playlists
         self.playlists_container = QFrame(self.nav_container)
-        self.playlists_container.setMaximumSize(165, 200)
-        self.playlists_container.setMinimumSize(165, 200)
+        self.playlists_container.setMaximumSize(165, 220)
+        self.playlists_container.setMinimumSize(165, 220)
         self.playlists_container.setStyleSheet('background-color: none')
         self.nav_layout.addWidget(self.playlists_container)
         self.playlists_layout = QVBoxLayout(self.playlists_container)
@@ -186,7 +186,7 @@ class AppUi(object):
         
     def _nav_container_animation(self, frame: QFrame):
         height = frame.height()
-        standard = 200
+        standard = 220
         extend = standard if height < standard else 60
         
         frame.animation = QPropertyAnimation(frame, b'minimumHeight')
@@ -221,10 +221,10 @@ class CustomButtom(QPushButton):
         
         if self._title:
             self._title_label.setStyleSheet('color: #909090')
-            utils.set_font(self._title_label, size=11, medium=True)
+            utils.set_font(self._title_label, size=12, medium=True)
         else:
             self._title_label.setStyleSheet('color: #565C67')
-            utils.set_font(self._title_label, size=11)
+            utils.set_font(self._title_label, size=12)
         self.layout().addWidget(self._title_label)
         
             

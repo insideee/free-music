@@ -3,7 +3,7 @@ from PySide6.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QToolButton, QGr
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 from decimal import Decimal
 
-import utils, schemas
+import utils, schemas, search
 
 class CustomSlider(QSlider):
     
@@ -120,7 +120,7 @@ class Player(QFrame):
         self.setMaximumHeight(60)
         self.setMinimumHeight(60)
         self.setMinimumWidth(1035)
-        self.setStyleSheet('background-color: rgba(22, 28, 38, 0.6)')
+        self.setStyleSheet('background-color: rgba(22, 28, 38, 0)')
         
         self._main_layout = QHBoxLayout(self)
         self._main_layout.setAlignment(Qt.AlignCenter)
@@ -412,7 +412,12 @@ class Player(QFrame):
         self._duration_label.setText('0:00')
         
     def _update_player_info(self):
+        self.path = self._music_obj[self._playlist_index].path
         self._player.setSource(self._playlist[self._playlist_index])
-        self._cover_label.setPixmap(self._music_obj[self._playlist_index].album_cover)
+        if(self._music_obj[self._playlist_index].album_cover != None):
+            self._cover_label.setPixmap(self._music_obj[self._playlist_index].album_cover)
+        else:
+            self._cover_label.setPixmap(utils.download_cover(self, album_cover_url=self._music_obj[self._playlist_index].album_cover_url, 
+                                 album_title=self._music_obj[self._playlist_index].album_title))
         self._artist_label.setText(self._music_obj[self._playlist_index].artist)
         self._title_label.setText(self._music_obj[self._playlist_index].title.upper())

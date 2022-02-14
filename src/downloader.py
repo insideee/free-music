@@ -13,6 +13,7 @@ class Downloader(QThread):
         self._title = None
         self._path = None  
         self._emit_play = False
+        self._is_playlist = False
         
     def run(self):
         print('Thread Working')
@@ -33,10 +34,10 @@ class Downloader(QThread):
             
             file_path = QUrl.fromLocalFile(f'{self._path}/{_id}.mp3')
             if(self._emit_play):
-                self.download_completed.emit([file_path, True])
+                self.download_completed.emit([file_path, True, self._is_playlist])
                 self._emit_play = False
             else:
-                self.download_completed.emit([file_path, False])
+                self.download_completed.emit([file_path, False, self._is_playlist])
                 
             
     def _search_video(self, title):
@@ -53,7 +54,11 @@ class Downloader(QThread):
     def _create_path(self):
         return tempfile.mkdtemp()
     
-    def update_title(self, title):
+    def update_title(self, title, is_playlist = False):
+        if(is_playlist):
+            self._is_playlist = True
+        else:
+            self._is_playlist = False
         self._title = title
         
     def update_emit_play(self, emit: bool):
