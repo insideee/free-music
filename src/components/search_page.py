@@ -152,7 +152,7 @@ class SearchPage(QFrame):
         self._playlist_result_area = QWidget() 
         self._playlist_result_area.setLayout(QHBoxLayout())
         self._playlist_result_area.layout().setSpacing(100)
-        self._playlist_result_area.layout().setContentsMargins(10, 0, 10, 0)
+        self._playlist_result_area.layout().setContentsMargins(50, 0, 50, 0)
         self._playlist_result_area.layout().setAlignment(Qt.AlignCenter)  
         
         self._playlist_results_scroll = QScrollArea()
@@ -197,7 +197,6 @@ class CustomPlayButton(QLabel):
         self.setBaseSize(QSize(80, 80))
         self.setMinimumSize(self.baseSize())
         self.resize(self.baseSize())
-        print(self.parent().geometry())
         self.setStyleSheet('background-color: none')
         a = utils.load_svg(':/images/playlist.svg', size=QSize(80, 80))
         self.setCursor(Qt.PointingHandCursor)
@@ -336,8 +335,7 @@ class PlaylistEntry(QFrame):
         self._favorite_btn.setIcon(utils.load_svg(':/images/favorite.svg', size=QSize(15, 15)))
         self._favorite_btn.setIconSize(QSize(15, 15))
         self._favorite_btn.setCursor(Qt.PointingHandCursor)
-        self._bottom_container.layout().addWidget(self._favorite_btn)
-        
+        self._bottom_container.layout().addWidget(self._favorite_btn)        
 
 class MusicEntry(QFrame):
     

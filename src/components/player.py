@@ -3,7 +3,9 @@ from PySide6.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QToolButton, QGr
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 from decimal import Decimal
 
-import utils, schemas, search
+import os
+
+import utils, schemas, search, downloader
 
 class CustomSlider(QSlider):
     
@@ -115,18 +117,28 @@ class DurationSlider(CustomSlider):
 
 class Player(QFrame):
 
+    check_playlist = Signal(bool)
+    
     def __init__(self, parent):
         super(Player, self).__init__(parent=parent)
         self.setMaximumHeight(60)
         self.setMinimumHeight(60)
-        self.setMinimumWidth(1035)
-        self.setStyleSheet('background-color: rgba(22, 28, 38, 0)')
+        self.setMinimumWidth(1025)
+        self.setStyleSheet('background-color: rgba(22, 28, 38, 0); \
+                            border-top-left-radius: 10px;\
+                            border-bottom-left-radius: 10px;\
+                            border-bottom-right-radius: 10px;\
+                            ')
         
         self._main_layout = QHBoxLayout(self)
         self._main_layout.setAlignment(Qt.AlignCenter)
         self._main_layout.setContentsMargins(0, 0, 0, 0)
         self._main_layout.setSpacing(0)
-        self._clear_style = 'background-color: rgba(255, 255, 255, 0); border: none'
+        self._clear_style = 'background-color: rgba(255, 255, 255, 0);\
+                            border-top-left-radius: 10px;\
+                            border-bottom-left-radius: 10px;\
+                            border-bottom-right-radius: 10px;\
+                            border: none'
 
         self._playlist = []
         self._playlist_index = -1
@@ -241,8 +253,7 @@ class Player(QFrame):
         # duration container
         self._duration_container = QFrame(self)
         self._duration_container.setObjectName('duration_container')
-        self._duration_container.setMinimumSize(QSize(460, 60))
-        self._duration_container.setMaximumSize(QSize(460, 60))
+        self._duration_container.setFixedSize(QSize(450, 60))
         self._duration_container.setStyleSheet(self._clear_style)
         self._main_layout.addWidget(self._duration_container)
         self._duration_layout = QHBoxLayout(self._duration_container)
@@ -265,13 +276,12 @@ class Player(QFrame):
         # volume
         self._volume_container = QFrame(self)
         self._volume_container.setObjectName('volume_container')
-        self._volume_container.setMinimumSize(QSize(120, 60))
-        self._volume_container.setMaximumSize(QSize(120, 60))
+        self._volume_container.setFixedSize(QSize(120, 60))
         self._volume_container.setStyleSheet(self._clear_style)
         self._main_layout.addWidget(self._volume_container)
         self._volume_layout = QHBoxLayout(self._volume_container)
         self._volume_layout.setAlignment(Qt.AlignCenter)
-        self._volume_layout.setContentsMargins(10, 0, 10, 0)
+        self._volume_layout.setContentsMargins(10, 0, 15, 0)
         self._volume_layout.setSpacing(6)
         
         self._volume_icon = QLabel(self._volume_container)
@@ -288,7 +298,10 @@ class Player(QFrame):
         self._volume_slider.valueChanged.connect(lambda: self._change_volume(self._volume_slider.value()/100))
         self._volume_layout.addWidget(self._volume_slider)
         
-    def add_to_playlist(self, url: QUrl, play: bool, music_obj: schemas.MusicSchema):
+        self._downloader = downloader.SourceDownloader()
+        
+    def add_to_playlist(self, play: bool, music_obj: schemas.MusicSchema):
+        url = music_obj.music_file
         self._playlist.append(url)
         self._music_obj.append(music_obj)
         if(self._playlist_index == -1):
@@ -299,9 +312,11 @@ class Player(QFrame):
             
         if(play):
             self._playlist_index = self._playlist_length() -1
-            self._update_player_info()
-            self._player.play()
-            self._reset_label_duration()
+            player_updated = self._update_player_info()
+            self._player.stop()
+            if(player_updated):
+                self._reset_label_duration()
+                self._player.play()
 
     def remove_from_playlist(self, url: QUrl):
         try:
@@ -365,16 +380,21 @@ class Player(QFrame):
     def _play_next(self):
         if(self._playlist_index != self._playlist_length() - 1):
             self._playlist_index += 1
-            self._update_player_info()
-            self._player.play()
-            self._reset_label_duration()
+            self._player.stop()
+            player_updated = self._update_player_info()
+            if(player_updated):
+                self._reset_label_duration()
+                self._player.play()
 
     @Slot()
     def _play_previous(self):
         if(self._player.position() <= 5000 and self._playlist_index > 0):
             self._playlist_index -= 1
+            self._player.stop()
             self._update_player_info()
-            self._player.play()
+            player_updated = self._update_player_info()
+            if(player_updated):
+                self._player.play()
         else:
             self._player.setPosition(0)
             self._player.play()
@@ -393,6 +413,7 @@ class Player(QFrame):
     @Slot()
     def _play_next_track(self):
         if(self._duration > 0 and self._duration <= self._player.position()+50 and self._playlist_index < self._playlist_length()-1):
+            self.check_playlist.emit(True)
             self._play_next()
             
     def _stop_timer(self, state):
@@ -413,11 +434,40 @@ class Player(QFrame):
         
     def _update_player_info(self):
         self.path = self._music_obj[self._playlist_index].path
-        self._player.setSource(self._playlist[self._playlist_index])
-        if(self._music_obj[self._playlist_index].album_cover != None):
-            self._cover_label.setPixmap(self._music_obj[self._playlist_index].album_cover)
+        source = self._get_file_source()
+        if(source != None):
+            self._player.setSource(source)
+            if(self._music_obj[self._playlist_index].album_cover != None):
+                self._cover_label.setPixmap(self._music_obj[self._playlist_index].album_cover)
+            else:
+                self._cover_label.setPixmap(utils.download_cover(self, album_cover_url=self._music_obj[self._playlist_index].album_cover_url, 
+                                    album_title=self._music_obj[self._playlist_index].album_title))
+            self._artist_label.setText(self._music_obj[self._playlist_index].artist)
+            self._title_label.setText(self._music_obj[self._playlist_index].title.upper())
+            return True
         else:
-            self._cover_label.setPixmap(utils.download_cover(self, album_cover_url=self._music_obj[self._playlist_index].album_cover_url, 
-                                 album_title=self._music_obj[self._playlist_index].album_title))
-        self._artist_label.setText(self._music_obj[self._playlist_index].artist)
-        self._title_label.setText(self._music_obj[self._playlist_index].title.upper())
+            return False
+        
+    def _get_file_source(self) -> QUrl:
+        if(os.path.isfile(self._music_obj[self._playlist_index].music_file.path())):
+            return self._music_obj[self._playlist_index].music_file
+        else:
+            self._downloader.update_id(self._music_obj[self._playlist_index].music_file_id)
+            self._downloader.update_path(self._music_obj[self._playlist_index].path)
+            self._downloader.download_completed.connect(self._download_source_receive)
+            self._downloader.start()
+            return None
+            
+    def _download_source_receive(self, url: QUrl):
+        self._music_obj[self._playlist_index].music_file = url
+        self._playlist[self._playlist_index] = url
+        self._player.stop()
+        self._player.setSource(url)
+        self._reset_label_duration()
+        self._player.play() 
+ 
+            
+# TODO:
+# Prob rewrite the source validator
+# If work on bugs sucesses dont need
+# clean cache depends on source validator

@@ -35,6 +35,8 @@ def download_cover(cls, album_cover_url, album_title, playlist_cover=False):
         if(album_cover_url != None):
             album_title = album_title.replace('/', '')
             album_title = album_title.replace(' ', '')
+            if(not(os.path.isdir(cls.path))):
+                os.mkdir(cls.path)
             save_path = f'{cls.path}/{album_title}.jpg' if not playlist_cover else f'{cls.path}/{album_title}_playlist.jpg'
             if not (os.path.isfile(save_path)):
                 r = requests.get(album_cover_url, allow_redirects=True)

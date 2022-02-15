@@ -1,9 +1,9 @@
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QVBoxLayout, QStackedWidget, QLabel, QLineEdit, QGridLayout, QPushButton, QSizePolicy, QToolButton
-from PySide6.QtCore import QSize, Qt, QPropertyAnimation, QEasingCurve, QAbstractAnimation, QPoint, QRect
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QVBoxLayout, QStackedWidget, QLabel, QLineEdit, QGridLayout, QToolButton, QGraphicsDropShadowEffect, QSystemTrayIcon, QPushButton
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtSvgWidgets import QSvgWidget
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QPixmap, QColor, QIcon
 
-from components import Player, SearchPage
+from components import Player, SearchPage, CustomNavMenu, MiniPlayer
 import utils
 
 class AppUi(object):
@@ -14,63 +14,84 @@ class AppUi(object):
         app.setObjectName('main_app')
         app.setWindowTitle('Free Music')
         app.setWindowIcon(QPixmap(':/images/icon.png'))
-        app.setMinimumSize(QSize(1200, 750)) 
+        app.resize(QSize(QSize(1200, 750)))
+        app.setMinimumSize(QSize(1050, 750)) 
         app.setStyleSheet("background-color: #003847")
+        
+        app.setWindowFlag(Qt.FramelessWindowHint)
+        app.setAttribute(Qt.WA_TranslucentBackground)
+        
+        def move_window(event):  
+            if event.buttons() == Qt.LeftButton:
+                app.move(app.pos() + event.globalPos() - app.dragPos)
+                app.dragPos = event.globalPos()
+                event.accept()
+        
+        self.tray_icon = QSystemTrayIcon(QIcon(QPixmap(':/images/icon.png')), parent=app)
+        self._mini_player = None
+        self._mini_player_config()
+        
+        # shadow        
+        self.shadow = QGraphicsDropShadowEffect(app)
+        self.shadow.setBlurRadius(20)
+        self.shadow.setXOffset(0)
+        self.shadow.setYOffset(0)
+        self.shadow.setColor(QColor(0, 0, 0, 100))
         
         self.container = QFrame(app)
         self.container.setObjectName('main_container')
         self.container.setStyleSheet('background-color: none')
-        self.container_layout = QHBoxLayout(self.container)
+        self.container_layout = QGridLayout(self.container)
         self.container_layout.setSpacing(0)
-        self.container_layout.setContentsMargins(0, 0, 0, 0)
+        self.container_layout.setContentsMargins(10, 10, 10, 10)
         
-        self.nav_container = QFrame(self.container)
-        self.nav_container.setObjectName('nav_container')
-        self.nav_container.setMaximumWidth(165)
-        self.nav_container.setMinimumWidth(165)
-        self.nav_container.setStyleSheet('background-color: #161C26')
-        self.nav_layout = QGridLayout(self.nav_container)
-        self.nav_layout.setSpacing(0)
-        self.nav_layout.setContentsMargins(0, 0, 0, 0)
-        self.nav_layout.setAlignment(Qt.AlignLeft | Qt.AlignTop)
-        self.container_layout.addWidget(self.nav_container)
-        
-        self.logo_container = QFrame(self.nav_container)
-        self.logo_container.setMinimumSize(QSize(165, 60))
-        self.logo_container.setMaximumSize(QSize(165, 60))
-        self.logo_container.setStyleSheet('background-color: none')
-        self.nav_layout.addWidget(self.logo_container, 0, 0)
-        self.logo_layout = QVBoxLayout(self.logo_container)
-        self.logo_layout.setAlignment(Qt.AlignLeft)
-        self.logo_layout.setSpacing(0)
-        self.logo_layout.setContentsMargins(15, 0, 0, 0)
-        
-        self.logo = QSvgWidget(':/images/logo.svg')
-        self.logo.setFixedSize(QSize(100, 40))
-        self.logo_layout.addWidget(self.logo)
-        
-        self._buttons_nav_config()
+        self.nav_menu = CustomNavMenu(self.container)
+        self.container_layout.addWidget(self.nav_menu, 0, 0)
         
         # content container
-        self.content_container = QFrame(self.container)
+        self.bg_container = QFrame(self.container)
+        self.bg_container.setObjectName('content_container')
+        self.bg_container.setStyleSheet('background-color: rgba(0, 56, 71, 1); border-radius: 10px;')
+        self.container_layout.addWidget(self.bg_container, 0, 1)
+        self.bg_layout = QVBoxLayout(self.bg_container)
+        self.bg_layout.setSpacing(0)
+        self.bg_layout.setContentsMargins(0, 0, 0, 0)
+        self.bg_container.setGraphicsEffect(self.shadow)
+        
+        self.content_container = QFrame(self.bg_container)
         self.content_container.setObjectName('content_container')
-        self.content_container.setStyleSheet('background-color: rgba(22, 28, 38, 0.6)')
-        self.container_layout.addWidget(self.content_container)
+        self.content_container.setStyleSheet('background-color: rgba(22, 28, 38, 0.6); border-radius: 10px;')
+        self.bg_layout.addWidget(self.content_container)
         self.content_layout = QVBoxLayout(self.content_container)
         self.content_layout.setAlignment(Qt.AlignBottom)
         self.content_layout.setSpacing(0)
         self.content_layout.setContentsMargins(0, 0, 0, 0)
         
-        # search container
+        # title container
+        self.title_bar_container = QFrame(self.content_container)
+        self.title_bar_container.setObjectName('title_bar_container')
+        self.title_bar_container.setMinimumHeight(70)
+        self.title_bar_container.setMaximumHeight(70)
+        self.title_bar_container.setFrameShape(QFrame.NoFrame)
+        self.title_bar_container.setFrameShadow(QFrame.Raised)
+        self.title_bar_container.setStyleSheet('background-color: none;')
+        self.title_bar_container.setLayout(QHBoxLayout())
+        self.title_bar_container.layout().setSpacing(0)
+        self.title_bar_container.layout().setContentsMargins(10, 0, 10, 0)
+        self.title_bar_container.mouseMoveEvent = move_window        
+        
         self.search_container = QFrame(self.content_container)
         self.search_container.setObjectName('search_container')
         self.search_container.setMinimumHeight(70)
         self.search_container.setMaximumHeight(70)
+        self.search_container.setFrameShape(QFrame.NoFrame)
+        self.search_container.setFrameShadow(QFrame.Raised)
         self.search_container.setStyleSheet('background-color: none;')
         self.search_layout = QHBoxLayout(self.search_container)
         self.search_layout.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.search_layout.setSpacing(10)
-        self.search_container.setContentsMargins(10, 0, 0, 0)
+        self.search_container.setContentsMargins(0, 0, 0, 0)
+        self.title_bar_container.layout().addWidget(self.search_container)
         
         self.search_icon = QLabel(self.search_container)
         self.search_icon.setMinimumSize(QSize(20, 20))
@@ -97,10 +118,33 @@ class AppUi(object):
         self.search_layout.addWidget(self.search_loading)
         self.search_loading.close()
         
+        self.btns_container = QFrame(self.title_bar_container)
+        self.btns_container.setObjectName('btns_container')
+        self.btns_container.setFixedSize(QSize(80, 70))
+        self.btns_container.setFrameShape(QFrame.NoFrame)
+        self.btns_container.setFrameShadow(QFrame.Raised)
+        self.btns_container.setStyleSheet('background-color: none;')
+        self.btns_layout = QHBoxLayout(self.btns_container)
+        self.btns_layout.setAlignment(Qt.AlignCenter)
+        self.btns_layout.setSpacing(12)
+        self.btns_container.setContentsMargins(0, 0, 0, 0)
+        self.title_bar_container.layout().addWidget(self.btns_container)
+        
+        self.exit_btn = CustomTitleBarBtns(self.btns_container, type='exit',
+                                           icon=':/images/exit.svg')
+        self.minimize_btn = CustomTitleBarBtns(self.btns_container, type='minimize',
+                                               icon=':/images/minimize.svg')
+        self.expand_btn = CustomTitleBarBtns(self.btns_container, type='expand',
+                                               icon=':/images/expand.svg')
+        
+        self.btns_layout.addWidget(self.minimize_btn)
+        self.btns_layout.addWidget(self.expand_btn)
+        self.btns_layout.addWidget(self.exit_btn)
+        
         # display container        
         self.display_container = QStackedWidget(self.content_container)
         self.display_container.setObjectName('display_container')
-        self.display_container.setMinimumHeight(620)
+        self.display_container.setMinimumHeight(590)
         self.display_container.setContentsMargins(0, 0, 0, 0)
         self.display_container.setStyleSheet('background-color: none')
         
@@ -110,130 +154,39 @@ class AppUi(object):
         
         self.player = Player(self.content_container)
         
-        self.content_layout.addWidget(self.search_container)
+        self.content_layout.addWidget(self.title_bar_container)
         self.content_layout.addWidget(self.display_container)
         self.content_layout.addWidget(self.player)
         
         app.setCentralWidget(self.container)
         
-    def _buttons_nav_config(self):
-        self.music_container = QFrame(self.nav_container)
-        self.music_container.setMaximumSize(165, 220)
-        self.music_container.setMinimumSize(165, 220)
-        self.music_container.setStyleSheet('background-color: none')
-        self.nav_layout.addWidget(self.music_container)
-        self.music_layout = QVBoxLayout(self.music_container)
-        self.music_layout.setSpacing(2)
-        self.music_layout.setContentsMargins(15, 25, 0, 0)
-        self.music_layout.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+    def _mini_player_config(self):
+        # temp
+        self._mini_player = QFrame()
+        self._mini_player.setObjectName('mini_player')
+        self._mini_player.setWindowTitle('mini player')
+        self._mini_player.setFixedSize(250, 350)
+        self._mini_player.setStyleSheet('background-color: red')
+        self._mini_player.setWindowFlags(Qt.FramelessWindowHint)
         
-        self.music_title_btn = CustomButtom(parent=self.music_container, text='music', title=True)
-        self.music_title_btn.clicked.connect(lambda: self._nav_container_animation(self.music_container))
-        self.music_layout.addWidget(self.music_title_btn)
+        self._mini_player.close_btn = QPushButton(parent=self._mini_player)
+        self._mini_player.close_btn.setFixedSize(80, 80)
+        self._mini_player.close_btn.clicked.connect(self._mini_player.hide)
         
-        self.discover_btn = CustomButtom(parent=self.music_container, text='discover',
-                                         geometry=QRect(QPoint(self.music_container.pos()+QPoint(15, 65)), 
-                                                        QSize(QSize(80, 20))))  
-        self.rising_btn = CustomButtom(parent=self.music_container, text='rising',
-                                         geometry=QRect(QPoint(self.music_container.pos()+QPoint(15, 90)), 
-                                                        QSize(QSize(80, 20))))       
-        self.my_stars_btn = CustomButtom(parent=self.music_container, text='my stars',
-                                         geometry=QRect(QPoint(self.music_container.pos()+QPoint(15, 115)), 
-                                                        QSize(QSize(80, 20))))
-        self.songs_btn = CustomButtom(parent=self.music_container, text='songs',
-                                         geometry=QRect(QPoint(self.music_container.pos()+QPoint(15, 150)), 
-                                                        QSize(QSize(80, 20))))
-        self.artists_btn = CustomButtom(parent=self.music_container, text='artists',
-                                         geometry=QRect(QPoint(self.music_container.pos()+QPoint(15, 175)), 
-                                                        QSize(QSize(80, 20))))
-        self.albuns_btn = CustomButtom(parent=self.music_container, text='albuns',
-                                         geometry=QRect(QPoint(self.music_container.pos()+QPoint(15, 200)), 
-                                                        QSize(QSize(80, 20))))
+        
 
-        # playlists
-        self.playlists_container = QFrame(self.nav_container)
-        self.playlists_container.setMaximumSize(165, 220)
-        self.playlists_container.setMinimumSize(165, 220)
-        self.playlists_container.setStyleSheet('background-color: none')
-        self.nav_layout.addWidget(self.playlists_container)
-        self.playlists_layout = QVBoxLayout(self.playlists_container)
-        self.playlists_layout.setSpacing(2)
-        self.playlists_layout.setContentsMargins(15, 0, 15, 0)
-        self.playlists_layout.setAlignment(Qt.AlignLeft | Qt.AlignTop)
-        
-        self.playlist_header = QFrame(self.playlists_container)
-        self.playlist_header.setFixedSize(QSize(165, 60))
-        self.playlists_layout.addWidget(self.playlist_header)
-        
-        self.playlist_header_layout = QHBoxLayout(self.playlist_header)
-        self.playlist_header_layout.setSpacing(0)
-        self.playlist_header_layout.setContentsMargins(0, 0, 0, 0)
-        self.playlist_header_layout.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        
-        self.playlist_title_btn = CustomButtom(parent=self.playlist_header, text='playlists', title=True)
-        self.playlist_header_layout.addWidget(self.playlist_title_btn)
-        self.playlist_title_btn.clicked.connect(lambda: self._nav_container_animation(self.playlists_container))
-        
-        self.add_playlist_btn = QToolButton(self.playlist_header)
-        self.add_playlist_btn.setIcon(utils.load_svg(':/images/plus.svg', size=QSize(16, 16)))
-        self.add_playlist_btn.setStyleSheet('background-color: rgba(0, 0, 0, 0);\
-                                            border: none;\
-                                            border-radius: none')
-        self.add_playlist_btn.setToolButtonStyle(Qt.ToolButtonIconOnly)
-        self.add_playlist_btn.setCursor(Qt.PointingHandCursor)
-        self.add_playlist_btn.setFixedSize(QSize(16, 16))
-        self.playlist_header_layout.addWidget(self.add_playlist_btn)
-        
-    def _nav_container_animation(self, frame: QFrame):
-        height = frame.height()
-        standard = 220
-        extend = standard if height < standard else 60
-        
-        frame.animation = QPropertyAnimation(frame, b'minimumHeight')
-        frame.animation.setDuration(400)
-        frame.animation.setStartValue(height)
-        frame.animation.setEndValue(extend)
-        frame.animation.setEasingCurve(QEasingCurve.InOutQuad)
-        frame.animation.start(QAbstractAnimation.DeleteWhenStopped)
-        
-        
-class CustomButtom(QPushButton):
+class CustomTitleBarBtns(QToolButton):
     
-    def __init__(self, parent, text, geometry: QRect = None, title: bool = False):
-        super(CustomButtom, self).__init__(parent=parent)
-        if geometry != None:
-            self.setGeometry(geometry)
-        self._title = title
+    def __init__(self, parent, type: str, icon: str):
+        super(CustomTitleBarBtns, self).__init__(parent=parent)
         
-        self.setLayout(QVBoxLayout())
-        self.layout().setContentsMargins(0, 0, 0, 0)
-        size = QSize(80, 20) if not self._title else QSize(120, 30)
-        self.setFixedSize(size)  
-        self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+        size = QSize(14,14) 
+        icon_size = size if type != 'minimize' else  QSize(14, 2)
+        self.setStyleSheet('background-color: none;\
+                            border: none')
+        self.setFixedSize(size)
+        self.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        self.setIcon(utils.load_svg(icon, size=icon_size))
+        self.setIconSize(icon_size)
         self.setCursor(Qt.PointingHandCursor)
-        self.setStyleSheet('background-color: rgba(0, 0, 0, 0); \
-                                            border: none; \
-                                            border-radius: none')
         
-        self._title_label = QLabel(text.capitalize()) if not self._title else QLabel(text.upper())
-        self._title_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        self._title_label.setAttribute(Qt.WA_TransparentForMouseEvents, True)
-        
-        if self._title:
-            self._title_label.setStyleSheet('color: #909090')
-            utils.set_font(self._title_label, size=12, medium=True)
-        else:
-            self._title_label.setStyleSheet('color: #565C67')
-            utils.set_font(self._title_label, size=12)
-        self.layout().addWidget(self._title_label)
-        
-            
-    def enterEvent(self, event) -> None:
-        if not self._title:
-            self._title_label.setStyleSheet('color: #909090')        
-        return super().enterEvent(event)
-    
-    def leaveEvent(self, event) -> None:
-        if not self._title:
-            self._title_label.setStyleSheet('color: #565C67')  
-        return super().leaveEvent(event)

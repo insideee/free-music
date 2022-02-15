@@ -56,12 +56,12 @@ class Search(QThread):
     def run(self):
         print('Working Thread')
         data =  asyncio.run(make_request(*self._request))
-        response_tracks, reponse_playlist = None, None
+        response_tracks, response_playlist = None, None
         
         for response in data:
             if not 'error' in response:
                 response = self._convert_to_dict(response)
-                if(len(response['data'][0]) > 0):
+                if(response['total'] > 0):
                     if(response['data'][0]['type'] == 'track'):
                         response_tracks = response
                     else:
@@ -73,7 +73,7 @@ class Search(QThread):
 
             self.response_received.emit({'tracks': valid_track_schema,
                                          'playlists': valid_playlist_schema})
-        except AssertionError:
+        except Exception as ex:
             # emit signal to error
             self.response_received.emit({'tracks': [],
                                          'playlists': []})      
@@ -176,7 +176,6 @@ class Search(QThread):
                                 
                 for schema in schema_response:
                     self._download_playlist_cover(schema)
-                    print(schema.cover_images)
                             
         return schema_response
       

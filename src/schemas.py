@@ -1,6 +1,7 @@
 from typing import Optional
 from pydantic import BaseModel
 from PySide6.QtGui import QPixmap
+from PySide6.QtCore import QUrl
 
 
 class MusicSchema(BaseModel):
@@ -13,6 +14,8 @@ class MusicSchema(BaseModel):
     album_cover: Optional[QPixmap] = None
     path: str
     duration: int
+    music_file: Optional[QUrl] = None
+    music_file_id: Optional[int] = None
     
     class Config:
         arbitrary_types_allowed = True
