@@ -46,3 +46,15 @@ def download_cover(cls, album_cover_url, album_title, playlist_cover=False):
         else:
             # default image for no album cover
             return QPixmap(':/images/default_cover.png')
+        
+def find_parent(obj: QObject, target: str):
+    parent = obj.parent()
+    
+    if hasattr(obj, 'objectName'):
+        for i in range(40):
+            if obj.objectName() == target:
+                return obj
+            else:
+                obj = obj.parent()
+                
+    return None

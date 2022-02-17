@@ -10,6 +10,9 @@ import tempfile
 import json
 import utils
 
+#TODO
+# too long process
+
 async def fetch(session, endpoint, id=None, download=False, download_data=None):
     try:
         if not download:

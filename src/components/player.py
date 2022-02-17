@@ -4,116 +4,9 @@ from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 from decimal import Decimal
 
 import os
-
 import utils, schemas, search, downloader
-
-class CustomSlider(QSlider):
-    
-    def __init__(self, orientation, parent):
-        super(CustomSlider, self).__init__(orientation=orientation, parent=parent)
-        self.setMinimumHeight(5)
-        self.setMinimum(0)
-        self.setMaximum(100)
-        
-        self._default_style = f"""QSlider::groove:horizontal{{
-                                                background: #565C67;
-                                                border-radius: 2px;
-                                                height: 5px;
-                                                position: absolute;
-                                                margin: 2px 0;
-                                                left: 4px; right: 4px
-                                            }}
-                                            QSlider::handle:horizontal{{
-                                                background: rgba(255, 255, 255, 0);
-                                                border: none;
-                                                border-radius: 3px;
-                                                width: 0px;
-                                            }}
-                                            QSlider::add-page:horizontal {{
-                                                background: #565C67;
-                                                border-radius: 2px;
-                                                height: 5px;
-                                                margin: 2px 0;
-                                            }}
-                                            QSlider::sub-page:horizontal {{
-                                                background: #3B89EE;
-                                                border-radius: 2px;
-                                                height: 5px;
-                                                margin: 2px 0;
-                                            }}"""
-        self._hover_style = f"""QSlider::groove:horizontal{{
-                                                background: #565C67;
-                                                border-radius: 4px;
-                                                height: 8px;
-                                                position: absolute;
-                                                margin: 2px 0;
-                                                left: 4px; right: 4px
-                                            }}
-                                            QSlider::handle:horizontal{{
-                                                background: rgba(255, 255, 255, 0);
-                                                border: none;
-                                                border-radius: none;
-                                                width: 0px;
-                                            }}
-                                            QSlider::add-page:horizontal {{
-                                                background: #565C67;
-                                                border-radius: 4px;
-                                                height: 8px;
-                                                margin: 4px 0;
-                                            }}
-                                            QSlider::sub-page:horizontal {{
-                                                background: #3B89EE;
-                                                border-radius: 4px;
-                                                height: 8px;
-                                                margin: 2px 0;
-                                            }}"""
-        self.setStyleSheet(self._default_style)
-        
-        self.setTickInterval(10)
-       
-    def mousePressEvent(self, e):
-        if e.button() == Qt.LeftButton:
-            e.accept()
-            x = e.pos().x()
-            value = (self.maximum() - self.minimum()) * x / self.width() + self.minimum()
-            self.setValue(value)
-        else:
-            return super().mousePressEvent(e) 
-        
-    def enterEvent(self, event) -> None:
-        self.setStyleSheet(self._hover_style)
-        return super().enterEvent(event)
-    
-    def leaveEvent(self, event) -> None:
-        self.setStyleSheet(self._default_style)
-        return super().leaveEvent(event)
-  
-        
-class DurationSlider(CustomSlider):
-    
-    update_playback = Signal(int)
-    
-    def __init__(self, orientation, parent):
-        super(DurationSlider, self).__init__(orientation, parent)
-        self.setMaximum(1)
-        self._timer = QTimer()
-        
-    def update_maximum(self, value: int):
-        self.setMaximum(value)
-        
-    def update_value(self, value: int):
-        self.setValue(value)
-    
-    def mousePressEvent(self, e):
-        if e.button() == Qt.LeftButton:
-            e.accept()
-            x = e.pos().x()
-            value = (self.maximum() - self.minimum()) * x / self.width() + self.minimum()
-            self.setValue(value)
-            self.update_playback.emit(self.value())
-        else:
-            return super().mousePressEvent(e)
-
+from .sliders import CustomSlider, DurationSlider
+from .mini_player import MiniPlayer
 
 class Player(QFrame):
 
@@ -150,6 +43,12 @@ class Player(QFrame):
         self._timer.timeout.connect(self._update_duration_label)
 
         #core components
+        self.mini_player = MiniPlayer()
+        self.mini_player.next_btn.clicked.connect(self._play_next)
+        self.mini_player.play_btn.clicked.connect(lambda: self._play_btn_clicked(self._player.playbackState()))
+        self.mini_player.previous_btn.clicked.connect(self._play_previous)
+        self.mini_player.duration_slider.update_playback.connect(self._update_playback)
+        
         self._audio_output = QAudioOutput()
         self._audio_output.setVolume(0.2)
         self._player = QMediaPlayer()
@@ -203,19 +102,18 @@ class Player(QFrame):
         utils.set_font(self._artist_label, size=11)
         self._title_layout.addWidget(self._artist_label, 1, 0)
 
-        #controlers
-        self._controlers_container = QFrame(self)
-        self._controlers_container.setObjectName('controlers_container')
-        self._controlers_container.setMinimumSize(QSize(240, 60))
-        self._controlers_container.setMaximumSize(QSize(240, 60))
-        self._controlers_container.setStyleSheet(self._clear_style)
-        self._main_layout.addWidget(self._controlers_container)
-        self._controlers_layout = QHBoxLayout(self._controlers_container)
-        self._controlers_layout.setAlignment(Qt.AlignCenter)
-        self._controlers_layout.setContentsMargins(0, 0, 0, 0)
-        self._controlers_layout.setSpacing(0)
+        #controllers
+        self._controllers_container = QFrame(self)
+        self._controllers_container.setObjectName('controllers_container')
+        self._controllers_container.setMinimumSize(QSize(240, 60))
+        self._controllers_container.setStyleSheet(self._clear_style)
+        self._main_layout.addWidget(self._controllers_container)
+        self._controllers_layout = QHBoxLayout(self._controllers_container)
+        self._controllers_layout.setAlignment(Qt.AlignCenter)
+        self._controllers_layout.setContentsMargins(0, 0, 0, 0)
+        self._controllers_layout.setSpacing(0)
 
-        self._play_btn = QToolButton(self._controlers_container)
+        self._play_btn = QToolButton(self._controllers_container)
         self._play_btn.setIcon(utils.load_svg(
             path=':/images/play.svg', size=QSize(45, 45)))
         self._play_btn.setIconSize(QSize(45, 45))
@@ -226,7 +124,7 @@ class Player(QFrame):
             lambda: self._play_btn_clicked(self._player.playbackState()))
         self._play_btn.setStyleSheet(self._clear_style)
 
-        self._previous_btn = QToolButton(self._controlers_container)
+        self._previous_btn = QToolButton(self._controllers_container)
         self._previous_btn.setIcon(utils.load_svg(
             path=':/images/previous.svg', size=QSize(24, 24)))
         self._previous_btn.setIconSize(QSize(24, 24))
@@ -236,7 +134,7 @@ class Player(QFrame):
         self._previous_btn.setStyleSheet(self._clear_style)
         self._previous_btn.clicked.connect(self._play_previous)
 
-        self._next_btn = QToolButton(self._controlers_container)
+        self._next_btn = QToolButton(self._controllers_container)
         self._next_btn.setIcon(utils.load_svg(
             path=':/images/next.svg', size=QSize(24, 24)))
         self._next_btn.setIconSize(QSize(24, 24))
@@ -246,9 +144,9 @@ class Player(QFrame):
         self._next_btn.setStyleSheet(self._clear_style)
         self._next_btn.clicked.connect(self._play_next)
 
-        self._controlers_layout.addWidget(self._previous_btn)
-        self._controlers_layout.addWidget(self._play_btn)
-        self._controlers_layout.addWidget(self._next_btn)
+        self._controllers_layout.addWidget(self._previous_btn)
+        self._controllers_layout.addWidget(self._play_btn)
+        self._controllers_layout.addWidget(self._next_btn)
 
         # duration container
         self._duration_container = QFrame(self)
@@ -345,15 +243,22 @@ class Player(QFrame):
         if (self._player.duration() > 0 or self._playlist_length() <= 0):
             self._duration = self._player.duration()
             self._duration_progress.update_maximum(int(self._duration / 1000))
+            self.mini_player.duration_slider.update_maximum(int(self._duration / 1000))
 
     def _update_duration_label(self):
         self._label_duration += Decimal(0.001)
         if(str(self._label_duration)[2] == '6'):
             self._label_duration += Decimal(.40)
+            
         self._duration_progress.update_value(int(self._player.position() / 1000))
         self._duration_label.setText(
             f'{str(self._label_duration)[0]}:{str(self._label_duration)[2]}{str(self._label_duration)[3]}')
         
+        if not self.mini_player.isHidden():
+            self.mini_player.duration_slider.update_value(int(self._player.position() / 1000))
+            self.mini_player.duration_label.setText(
+            f'{str(self._label_duration)[0]}:{str(self._label_duration)[2]}{str(self._label_duration)[3]}')
+
     def _update_playback(self, value: int):
         self._player.setPosition(value * 1000)
         value_to_label = Decimal(value / 100)
@@ -369,6 +274,7 @@ class Player(QFrame):
     @Slot()
     def _play_btn_clicked(self, state):
         if (state != QMediaPlayer.PlayingState and not self.playlist_empty()):
+            print('play')
             self._player.play()
             self._timer.start()
         else:
@@ -378,37 +284,43 @@ class Player(QFrame):
 
     @Slot()
     def _play_next(self):
-        if(self._playlist_index != self._playlist_length() - 1):
-            self._playlist_index += 1
-            self._player.stop()
-            player_updated = self._update_player_info()
-            if(player_updated):
-                self._reset_label_duration()
-                self._player.play()
+        if(not self.playlist_empty()):
+            if(self._playlist_index != self._playlist_length() - 1):
+                self._playlist_index += 1
+                self._player.stop()
+                player_updated = self._update_player_info()
+                if(player_updated):
+                    self._reset_label_duration()
+                    self._player.play()
 
     @Slot()
     def _play_previous(self):
-        if(self._player.position() <= 5000 and self._playlist_index > 0):
-            self._playlist_index -= 1
-            self._player.stop()
-            self._update_player_info()
-            player_updated = self._update_player_info()
-            if(player_updated):
+        if(not self.playlist_empty):
+            if(self._player.position() <= 5000 and self._playlist_index > 0):
+                self._playlist_index -= 1
+                self._player.stop()
+                self._update_player_info()
+                player_updated = self._update_player_info()
+                if(player_updated):
+                    self._player.play()
+            else:
+                self._player.setPosition(0)
                 self._player.play()
-        else:
-            self._player.setPosition(0)
-            self._player.play()
-        self._reset_label_duration()
+            self._reset_label_duration()
 
     @Slot()
     def _update_buttons(self, state):
         if (state == QMediaPlayer.PlayingState):
             self._play_btn.setIcon(utils.load_svg(
                 path=':/images/pause.svg', size=QSize(45, 45)))
+            self.mini_player.play_btn.setIcon(utils.load_svg(
+                path=':/images/pause.svg', size=QSize(40, 40)))
         else:
             self._play_btn.setIcon(utils.load_svg(
                 path=':/images/play.svg', size=QSize(45, 45)))
             self._stop_timer(self._player.playbackState())
+            self.mini_player.play_btn.setIcon(utils.load_svg(
+                path=':/images/play.svg', size=QSize(40, 40)))
 
     @Slot()
     def _play_next_track(self):
