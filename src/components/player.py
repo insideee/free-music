@@ -2,6 +2,7 @@ from PySide6.QtCore import QUrl, QSize, Qt, Slot, QTimer, QObject, QEvent, Signa
 from PySide6.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QToolButton, QGridLayout, QLabel, QSlider
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 from decimal import Decimal
+import platform
 
 import os
 import utils, schemas, search, downloader
@@ -361,7 +362,9 @@ class Player(QFrame):
             return False
         
     def _get_file_source(self) -> QUrl:
-        if(os.path.isfile(self._music_obj[self._playlist_index].music_file.path())):
+        print(self._music_obj[self._playlist_index].music_file.path(), os.path.isfile(self._music_obj[self._playlist_index].music_file.path()))
+        path = self._music_obj[self._playlist_index].music_file.path()[1:] if platform.system() == 'Windows' else self._music_obj[self._playlist_index].music_file.path()
+        if(os.path.isfile(path)):
             return self._music_obj[self._playlist_index].music_file
         else:
             self._downloader.update_id(self._music_obj[self._playlist_index].music_file_id)

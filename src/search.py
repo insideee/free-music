@@ -9,6 +9,7 @@ import os
 import tempfile
 import json
 import utils
+import platform
 
 #TODO
 # too long process
@@ -57,7 +58,9 @@ class Search(QThread):
         self._query_str = None
         
     def run(self):
-        print('Working Thread')
+        print('Search Thread Started')
+        if platform.system()=='Windows':
+            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
         data =  asyncio.run(make_request(*self._request))
         response_tracks, response_playlist = None, None
         

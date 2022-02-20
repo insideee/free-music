@@ -17,7 +17,7 @@ class Downloader(QThread):
         self._is_playlist = False
         
     def run(self):
-        print('Thread Working')
+        print('Downloader Thread Started')
         
         url_video, _id = self._search_video(self._title)
         
@@ -77,7 +77,7 @@ class SourceDownloader(QThread):
         self._path = None
         
     def run(self):
-        print('Working Thread')
+        print('Downloader Thread Working')
         
         if(self._path != None):
             if( not os.path.isdir(self._path)):
