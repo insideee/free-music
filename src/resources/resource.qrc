@@ -1,0 +1,26 @@
+<RCC>
+    <qresource>
+    <file>./images/play.svg</file>
+    <file>./images/pause.svg</file>
+    <file>./images/next.svg</file>
+    <file>./images/previous.svg</file>
+    <file>./images/sound.svg</file>
+    <file>./images/search.svg</file>
+    <file>./images/favorite.svg</file>
+    <file>./images/plus.svg</file>
+    <file>./images/play_btn.svg</file>
+    <file>./images/loading.svg</file>
+    <file>./images/logo.svg</file>
+    <file>./images/playlist.svg</file>
+    <file>./images/icon.png</file>
+    <file>./images/default_cover.png</file>
+    <file>./images/expand_right.svg</file>
+    <file>./images/expand_left.svg</file>
+    <file>./images/expand.svg</file>
+    <file>./images/exit.svg</file>
+    <file>./images/minimize.svg</file>
+    <file>./images/checked.svg</file>
+    <file>./fonts/IBMPlexSansThaiLooped-Regular.ttf</file>
+    <file>./fonts/IBMPlexSansThaiLooped-Medium.ttf</file>
+    </qresource>
+</RCC>
