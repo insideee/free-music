@@ -45,16 +45,19 @@ class App(QMainWindow):
         self._ui.title_bar.exit_btn.clicked.connect(self._exit_btn_config)
         self._ui.title_bar.expand_btn.clicked.connect(self._expand_btn_config)
         self._ui.title_bar.minimize_btn.clicked.connect(self._minimize_btn_config)
+        self.show()
+        # set the window obj generated after show event
+        self._ui.title_bar.set_window_handle(self.windowHandle())
         
         # tray icon
         self._ui.tray_icon.activated.connect(self._tray_icon_clicked)
         self._ui.restore_act.triggered.connect(self._restore_sys_tray)
         
-        #self.tray_icon = QSystemTrayIcon(QIcon(QPixmap(':/images/icon.png')), parent=app)
-        #self._ui.player.mini_player.show()
-        self.show()
-        
     def mousePressEvent(self, event: QMouseEvent) -> None:
+        """Handle the mouse press event in the application
+        """
+
+        # save drag pos to the custom title bar 
         self.drag_pos = event.globalPosition().toPoint()
         # remove cursor when search lose focus
         focus_widget = QApplication.focusWidget()
@@ -62,7 +65,6 @@ class App(QMainWindow):
         if hasattr(focus_widget, 'objectName'):
             if focus_widget.objectName() == 'search_entry':
                 focus_widget.clearFocus()
-
         return super().mousePressEvent(event)
     
     def _download_receiver(self, data_list: list):
