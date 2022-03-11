@@ -1,6 +1,6 @@
 from datetime import timedelta
 from PySide6.QtWidgets import QFrame, QScrollArea, QVBoxLayout, QWidget, QLabel, QHBoxLayout, QToolButton, QGraphicsDropShadowEffect, QSizePolicy, QGridLayout
-from PySide6.QtCore import Qt, QSize, Signal, QPoint, QRect, QPropertyAnimation, QEasingCurve, QAbstractAnimation
+from PySide6.QtCore import Qt, QSize, Signal, QPoint, QRect, QPropertyAnimation, QEasingCurve, QAbstractAnimation, Slot
 from PySide6.QtGui import QColor
 from PySide6.QtSvgWidgets import QSvgWidget
 import schemas
@@ -97,7 +97,7 @@ class SearchPage(QFrame):
             count += 1
      
     def _delete_entries(self):
-        if(len(self.music_entry_list) > 0):
+        if len(self.music_entry_list) > 0:
             for entry in self.music_entry_list:
                 try:
                     entry.deleteLater()
@@ -106,7 +106,7 @@ class SearchPage(QFrame):
                     pass
             self.music_entry_list = []
                 
-        if(len(self.playlist_entry_list) > 0):
+        if len(self.playlist_entry_list) > 0:
             for entry in self.playlist_entry_list:
                 try:
                     entry.deleteLater()
@@ -115,11 +115,12 @@ class SearchPage(QFrame):
                     pass
             self.playlist_entry_list = []
                    
-                
+    @Slot()           
     def _play_clicked(self, music_obj):
         self._sender = self.sender()
         self.play_request.emit([music_obj, self._sender])
     
+    @Slot()
     def _play_playlist_clicked(self, playlist_obj):
         self._sender = self.sender()
         self.playlist_request.emit([playlist_obj, self._sender])      
@@ -487,12 +488,14 @@ class MusicEntry(QFrame):
     def convert_duration(self, seconds: int):        
         return str(timedelta(seconds=seconds))[2:]
     
+    @Slot()
     def send_info(self):
         self.info.emit(self.music_obj)
         
     def update_loading(self, value: bool):
         self.loading = value
-        
+    
+    @Slot()    
     def _init_loading(self):
         self.loading = True
         self._play_btn.close()

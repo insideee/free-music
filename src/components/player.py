@@ -203,13 +203,13 @@ class Player(QFrame):
         url = music_obj.music_file
         self._playlist.append(url)
         self._music_obj.append(music_obj)
-        if(self._playlist_index == -1):
+        if self._playlist_index == -1:
             self._playlist_index = 0
             self._update_player_info()
-        if(self._player.playbackState() == QMediaPlayer.StoppedState or self._player.playbackState() == QMediaPlayer.PausedState): 
+        if self._player.playbackState() == QMediaPlayer.StoppedState or self._player.playbackState() == QMediaPlayer.PausedState: 
             self._play_btn_clicked(QMediaPlayer.StoppedState)
             
-        if(play):
+        if play:
             self._playlist_index = self._playlist_length() -1
             player_updated = self._update_player_info()
             self._player.stop()
@@ -229,7 +229,7 @@ class Player(QFrame):
         return len(self._playlist)
 
     def playlist_empty(self):
-        if (len(self._playlist) != 0):
+        if len(self._playlist) != 0:
             return False
         else:
             return True
@@ -241,11 +241,12 @@ class Player(QFrame):
             return -1
 
     def _set_duration(self):
-        if (self._player.duration() > 0 or self._playlist_length() <= 0):
+        if self._player.duration() > 0 or self._playlist_length() <= 0:
             self._duration = self._player.duration()
             self._duration_progress.update_maximum(int(self._duration / 1000))
             self.mini_player.duration_slider.update_maximum(int(self._duration / 1000))
 
+    @Slot()
     def _update_duration_label(self):
         self._label_duration += Decimal(0.001)
         if(str(self._label_duration)[2] == '6'):
@@ -263,8 +264,8 @@ class Player(QFrame):
     def _update_playback(self, value: int):
         self._player.setPosition(value * 1000)
         value_to_label = Decimal(value / 100)
-        if(len(str(value_to_label)) >= 3):
-            if(str(value_to_label)[2] >= '6'):
+        if len(str(value_to_label)) >= 3:
+            if str(value_to_label)[2] >= '6':
                 value_to_label += Decimal(.40)
                 self._duration_label.setText(f'{str(value_to_label)[0]}:{str(value_to_label)[2]}{str(value_to_label)[3]}')
         else:
@@ -274,8 +275,7 @@ class Player(QFrame):
 
     @Slot()
     def _play_btn_clicked(self, state):
-        if (state != QMediaPlayer.PlayingState and not self.playlist_empty()):
-            print('play')
+        if state != QMediaPlayer.PlayingState and not self.playlist_empty():
             self._player.play()
             self._timer.start()
         else:
@@ -285,24 +285,24 @@ class Player(QFrame):
 
     @Slot()
     def _play_next(self):
-        if(not self.playlist_empty()):
-            if(self._playlist_index != self._playlist_length() - 1):
+        if not self.playlist_empty():
+            if self._playlist_index != self._playlist_length() - 1:
                 self._playlist_index += 1
                 self._player.stop()
                 player_updated = self._update_player_info()
-                if(player_updated):
+                if player_updated:
                     self._reset_label_duration()
                     self._player.play()
 
     @Slot()
     def _play_previous(self):
-        if(not self.playlist_empty):
-            if(self._player.position() <= 5000 and self._playlist_index > 0):
+        if not self.playlist_empty():
+            if self._player.position() <= 5000 and self._playlist_index > 0:
                 self._playlist_index -= 1
                 self._player.stop()
                 self._update_player_info()
                 player_updated = self._update_player_info()
-                if(player_updated):
+                if player_updated:
                     self._player.play()
             else:
                 self._player.setPosition(0)
@@ -311,7 +311,7 @@ class Player(QFrame):
 
     @Slot()
     def _update_buttons(self, state):
-        if (state == QMediaPlayer.PlayingState):
+        if state == QMediaPlayer.PlayingState:
             self._play_btn.setIcon(utils.load_svg(
                 path=':/images/pause.svg', size=QSize(45, 45)))
             self.mini_player.play_btn.setIcon(utils.load_svg(
@@ -325,7 +325,7 @@ class Player(QFrame):
 
     @Slot()
     def _play_next_track(self):
-        if(self._duration > 0 and self._duration <= self._player.position()+50 and self._playlist_index < self._playlist_length()-1):
+        if self._duration > 0 and self._duration <= self._player.position()+50 and self._playlist_index < self._playlist_length()-1:
             self.check_playlist.emit(True)
             self._play_next()
             
@@ -362,7 +362,6 @@ class Player(QFrame):
             return False
         
     def _get_file_source(self) -> QUrl:
-        print(self._music_obj[self._playlist_index].music_file.path(), os.path.isfile(self._music_obj[self._playlist_index].music_file.path()))
         path = self._music_obj[self._playlist_index].music_file.path()[1:] if platform.system() == 'Windows' else self._music_obj[self._playlist_index].music_file.path()
         if(os.path.isfile(path)):
             return self._music_obj[self._playlist_index].music_file
@@ -383,6 +382,6 @@ class Player(QFrame):
  
             
 # TODO:
-# Prob rewrite the source validator
 # If work on bugs sucesses dont need
+# rewrite the source validator
 # clean cache depends on source validator

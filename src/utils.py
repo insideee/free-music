@@ -4,7 +4,9 @@ from PySide6.QtGui import QPixmap, QPainter, QFontDatabase, QFont
 import requests
 import os
 
-def load_svg(path: str, size: QSize):
+def load_svg(path: str, size: QSize) -> QPixmap:
+    """Load a svg file and return a qpixmap
+    """
     svg_render = QSvgRenderer(path)   
     new_image = QPixmap(size)
     painter = QPainter()
@@ -16,6 +18,8 @@ def load_svg(path: str, size: QSize):
     return new_image
 
 def set_font(target: QObject, size: int, medium=False, bold: bool=False) -> None:
+    """Set a custom font to the target
+    """
     font_name = ':/fonts/IBMPlexSansThaiLooped-Regular.ttf' if not medium else ':/fonts/IBMPlexSansThaiLooped-Medium.ttf'
     index = 0
     
@@ -32,22 +36,28 @@ def set_font(target: QObject, size: int, medium=False, bold: bool=False) -> None
     target.setFont(font)
     
 def download_cover(cls, album_cover_url, album_title, playlist_cover=False):
-        if(album_cover_url != None):
-            album_title = album_title.replace('/', '')
-            album_title = album_title.replace(' ', '')
-            if(not(os.path.isdir(cls.path))):
-                os.mkdir(cls.path)
-            save_path = f'{cls.path}/{album_title}.jpg' if not playlist_cover else f'{cls.path}/{album_title}_playlist.jpg'
-            if not (os.path.isfile(save_path)):
-                r = requests.get(album_cover_url, allow_redirects=True)
-                open(save_path, 'wb').write(r.content)
+    """Download the album cover of a track
+    """
+    # find a better location for this
 
-            return QPixmap(save_path)
-        else:
-            # default image for no album cover
-            return QPixmap(':/images/default_cover.png')
+    if(album_cover_url != None):
+        album_title = album_title.replace('/', '')
+        album_title = album_title.replace(' ', '')
+        if(not(os.path.isdir(cls.path))):
+            os.mkdir(cls.path)
+        save_path = f'{cls.path}/{album_title}.jpg' if not playlist_cover else f'{cls.path}/{album_title}_playlist.jpg'
+        if not (os.path.isfile(save_path)):
+            r = requests.get(album_cover_url, allow_redirects=True)
+            open(save_path, 'wb').write(r.content)
+
+        return QPixmap(save_path)
+    else:
+        # default image for no album cover
+        return QPixmap(':/images/default_cover.png')
         
 def find_parent(obj: QObject, target: str):
+    """Find the target parent of a children qobject
+    """
     parent = obj.parent()
     
     if hasattr(obj, 'objectName'):

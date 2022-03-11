@@ -78,7 +78,7 @@ class AppUi(object):
         # display container
         self.display_container = QStackedWidget(self.content_container)
         self.display_container.setObjectName('display_container')
-        self.display_container.setMinimumHeight(590)
+        self.display_container.setMinimumHeight(560)
         self.display_container.setContentsMargins(0, 0, 0, 0)
         self.display_container.setStyleSheet('background-color: none')
 
@@ -106,17 +106,3 @@ class AppUi(object):
         self.content_layout.addWidget(self.bottom_container)
 
         app.setCentralWidget(self.container)
-
-    def _mini_player_config(self):
-        # temp
-        return
-        self._mini_player.setObjectName('mini_player')
-        self._mini_player.setWindowTitle('mini player')
-        self._mini_player.setFixedSize(250, 160)
-        self._mini_player.setStyleSheet('background-color: rgba(22, 28, 38, 0.6);\
-                                            border-radius: 20px')
-        self._mini_player.setWindowFlags(Qt.FramelessWindowHint)
-
-        self._mini_player.close_btn = QPushButton(parent=self._mini_player)
-        self._mini_player.close_btn.setFixedSize(80, 80)
-        self._mini_player.close_btn.clicked.connect(self._mini_player.hide)

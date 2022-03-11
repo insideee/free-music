@@ -85,6 +85,8 @@ class TitleBar(QFrame):
         self.window_handle = None
 
     def set_window_handle(self, window: QWindow) -> None:
+        """Set the window obj for the startsystemmove
+        """
         self.window_handle = window
         
     def mouseMoveEvent(self, event) -> None:

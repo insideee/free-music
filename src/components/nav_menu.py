@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QGraphicsDropShadowEffect, QGridLayout, QToolButton, QVBoxLayout, QSizePolicy, QPushButton, QLabel
 from PySide6.QtGui import QColor
-from PySide6.QtCore import Qt, QSize, QPropertyAnimation, QEasingCurve, QPoint, QRect, QAbstractAnimation
+from PySide6.QtCore import Qt, QSize, QPropertyAnimation, QEasingCurve, QPoint, QRect, QAbstractAnimation, Slot
 from PySide6.QtSvgWidgets import QSvgWidget
 
 import utils
@@ -144,7 +144,8 @@ class CustomNavMenu(QFrame):
         self.add_playlist_btn.setCursor(Qt.PointingHandCursor)
         self.add_playlist_btn.setFixedSize(QSize(16, 16))
         self.playlist_header_layout.addWidget(self.add_playlist_btn) 
-        
+    
+    @Slot()   
     def _toggle_animation(self):
         start_w = self._nav_container.width()
         standard = 165
@@ -153,7 +154,8 @@ class CustomNavMenu(QFrame):
         self._animation.setStartValue(start_w)
         self._animation.setEndValue(expand)
         self._animation.start()
-        
+    
+    @Slot()   
     def _change_toggle_icon(self):
         if self._expanded:
             self._toggle_btn.setIcon(self._expand_left_icon)
