@@ -1,10 +1,13 @@
 from PySide6.QtWidgets import QFrame, QLabel, QHBoxLayout, QLineEdit, QToolButton
 from PySide6.QtCore import Qt, QSize
+from PySide6.QtGui import QWindow
 from PySide6.QtSvgWidgets import QSvgWidget
 
 import utils
 
 class TitleBar(QFrame):
+    """Custom title bar for replace the default system title bar
+    """
     
     def __init__(self, parent):
         super(TitleBar, self).__init__(parent=parent)
@@ -76,28 +79,41 @@ class TitleBar(QFrame):
         self.btns_layout.addWidget(self.minimize_btn)
         self.btns_layout.addWidget(self.expand_btn)
         self.btns_layout.addWidget(self.exit_btn)
+
+        # variables
+        self.support_system_move = False
+        self.window_handle = None
+
+    def set_window_handle(self, window: QWindow) -> None:
+        """Set the window obj for the startsystemmove
+        """
+        self.window_handle = window
         
     def mouseMoveEvent(self, event) -> None:
-        app = utils.find_parent(obj=self, target='main_app')
-        if app != None:
-            if not app.isMaximized():
-                if event.buttons() == Qt.LeftButton:
-                    app.move(app.pos() + event.globalPos() - app.drag_pos)
-                    app.drag_pos = event.globalPos()
-                    event.accept()
-           
+        """Handle the window move event if not 
+        support the startsystemmove
+        """
+        if not self.support_system_move:
+            app = utils.find_parent(obj=self, target='main_app')
+            if app != None:
+                if not app.isMaximized():
+                    if event.buttons() == Qt.LeftButton:
+                        app.move(app.pos() + event.globalPos() - app.drag_pos)
+                        app.drag_pos = event.globalPos()
+                        event.accept()
         return super().mousePressEvent(event)
     
     def mousePressEvent(self, event) -> None:
-        self.setCursor(Qt.ClosedHandCursor)
+        """Move window function using mouse press event
+        """
+        if self.window_handle != None:
+            self.support_system_move = True if self.window_handle.startSystemMove() else False
         return super().mousePressEvent(event)
-    
-    def mouseReleaseEvent(self, event) -> None:
-        self.setCursor(Qt.ArrowCursor)
-        return super().mouseReleaseEvent(event)
-    
+
     
 class CustomTitleBarBtns(QToolButton):
+    """Custom button for minimize, expand, exit functionality
+    """
     
     def __init__(self, parent, type: str, icon: str):
         super(CustomTitleBarBtns, self).__init__(parent=parent)

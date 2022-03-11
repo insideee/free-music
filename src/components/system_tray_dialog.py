@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QFrame, QStyle, QLabel, QVBoxLayout, QGraphicsDropShadowEffect, QToolButton,QHBoxLayout, QPushButton, QCheckBox
-from PySide6.QtCore import QSize, Qt, QRect, QPoint, QEvent
+from PySide6.QtCore import QSize, Qt, QRect, QPoint, QEvent, Slot
 from PySide6.QtGui import QGuiApplication, QColor
 
 import utils
@@ -148,5 +148,6 @@ class SystemTrayDialog(QFrame):
                                         QSize(self.exit_btn.baseSize())))
         self.show()
     
+    @Slot()
     def _remember_check(self):
         pass

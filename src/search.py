@@ -11,10 +11,14 @@ import json
 import utils
 import platform
 
-#TODO
-# too long process
+# TODO: resolve too long process
+# probably the download cover
 
 async def fetch(session, endpoint, id=None, download=False, download_data=None):
+    """Asysnc function for aiohttp,
+    not using download because slow down more than the sync donwnload
+    prob aiofiles problem
+    """
     try:
         if not download:
             async with session.get(endpoint) as response:
@@ -58,7 +62,8 @@ class Search(QThread):
         self._query_str = None
         
     def run(self):
-        print('Search Thread Started')
+        """Qthread function that run on .start() call
+        """
         if platform.system()=='Windows':
             asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
         data =  asyncio.run(make_request(*self._request))
@@ -76,20 +81,24 @@ class Search(QThread):
         try:                
             valid_track_schema = self._validate_tracks_response(response_tracks, download_cover=True)
             valid_playlist_schema = self._validate_playlist_response(response_playlist)
-
             self.response_received.emit({'tracks': valid_track_schema,
                                          'playlists': valid_playlist_schema})
         except Exception as ex:
             # emit signal to error
+            # TODO: show some error on search
             self.response_received.emit({'tracks': [],
-                                         'playlists': []})      
-        
+                                         'playlists': []})   
+
     def update_query(self, query_str):
+        """Update the query seach
+        """
         self._query_str = query_str.replace(' ', '+')
         self._request = [{'endpoint': f'{self._search_endpoint}{self._query_str}'}, 
                          {'endpoint': f'{self._search_playlist_endpoint}{self._query_str}'}]
         
     def _validate_tracks_response(self, response: dict, download_cover: bool = True):
+        """Validator for tracks response
+        """
         assert(response != None and type(response) == dict)
         
         schema_response = []  
@@ -117,13 +126,13 @@ class Search(QThread):
                             print(error, '\n', aux['album_cover_url'])
                             
                         
-            if(download_cover):
+            if download_cover:
                 for schema in schema_response:
                     schema.album_cover = utils.download_cover(self, schema.album_cover_url, 
                                                         schema.album_title)
                 
-                # async download images, i dont know why but even 
-                # async aiohttp take more time
+                # i dont know why but
+                # async aiohttp takes more time
                 # to write the content on disk, maybe aiofiles isnt foog enought
                 # ll keep request sync for now
                  
@@ -151,6 +160,8 @@ class Search(QThread):
             return schema_response
     
     def _validate_playlist_response(self, response):
+        """Validator for playlist response
+        """
         assert(response != None and type(response) == dict)
         
         schema_response = []
@@ -163,7 +174,7 @@ class Search(QThread):
                 for data in response['data']:
                     schema_response.append(schemas.PlaylistSchema.parse_obj(data))
 
-            if(schema_response != None):
+            if schema_response != None:
                 request = []
                 for schema in schema_response:
                     request.append({'endpoint': f'https://api.deezer.com/playlist/{schema.id}',
@@ -174,18 +185,25 @@ class Search(QThread):
                 for response in data:
                     if not 'error' in response:
                         for schema in schema_response:
-                            if schema.id == response['id']:
-                                aux = self._convert_to_dict(response['response'])['tracks']
-                                aux['total'] = len(aux['data'])
-                                track_response = self._validate_tracks_response(aux, download_cover=False)
-                                schema.music_list = track_response
-                                
+                            if not 'error' in response['response']:
+                                if schema.id == response['id']:
+                                    aux = self._convert_to_dict(response['response'])
+                                    aux = aux['tracks']
+                                    aux['total'] = len(aux['data'])
+                                    track_response = self._validate_tracks_response(aux, download_cover=False)
+                                    schema.music_list = track_response
+                            else:
+                                if schema.id == response['id']:
+                                    schema_response.remove(schema)
+
                 for schema in schema_response:
                     self._download_playlist_cover(schema)
                             
         return schema_response
       
     def _download_playlist_cover(self, playlist_obj: schemas.PlaylistSchema):
+        """Download some albums cover for playlist cover
+        """
         max_item = 4
         for music in playlist_obj.music_list:
             aux = None
@@ -212,5 +230,7 @@ class Search(QThread):
                     playlist_obj.cover_images.append(QPixmap(':/images/default_cover.png'))
                     
                 
-    def _convert_to_dict(self, response):        
+    def _convert_to_dict(self, response: str) -> dict:      
+        """Convert a json str and return a dict
+        """  
         return json.loads(response)

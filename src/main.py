@@ -2,7 +2,7 @@ import sys
 import shutil
 
 from PySide6.QtWidgets import QApplication, QMainWindow, QSystemTrayIcon
-from PySide6.QtCore import QEvent, Qt, QPoint
+from PySide6.QtCore import QEvent, Qt, QPoint, Slot
 from PySide6.QtGui import QMouseEvent, QCloseEvent, QIcon, QPixmap, QGuiApplication, QCursor
 
 
@@ -22,6 +22,7 @@ class App(QMainWindow):
         self._ui =  ui.AppUi()
         self._ui.init_gui(self)
         
+        # variables
         self._sender = None
         self._music_obj = None
         self._playlist_obj = None
@@ -45,16 +46,18 @@ class App(QMainWindow):
         self._ui.title_bar.exit_btn.clicked.connect(self._exit_btn_config)
         self._ui.title_bar.expand_btn.clicked.connect(self._expand_btn_config)
         self._ui.title_bar.minimize_btn.clicked.connect(self._minimize_btn_config)
+        self.show()
+        # set the window obj generated after show event
+        self._ui.title_bar.set_window_handle(self.windowHandle())
         
         # tray icon
         self._ui.tray_icon.activated.connect(self._tray_icon_clicked)
         self._ui.restore_act.triggered.connect(self._restore_sys_tray)
         
-        #self.tray_icon = QSystemTrayIcon(QIcon(QPixmap(':/images/icon.png')), parent=app)
-        #self._ui.player.mini_player.show()
-        self.show()
-        
     def mousePressEvent(self, event: QMouseEvent) -> None:
+        """Handle the mouse press event in the application
+        """
+        # save drag pos to the custom title bar 
         self.drag_pos = event.globalPosition().toPoint()
         # remove cursor when search lose focus
         focus_widget = QApplication.focusWidget()
@@ -62,9 +65,9 @@ class App(QMainWindow):
         if hasattr(focus_widget, 'objectName'):
             if focus_widget.objectName() == 'search_entry':
                 focus_widget.clearFocus()
-
         return super().mousePressEvent(event)
     
+    @Slot()
     def _download_receiver(self, data_list: list):
         
         file_data, play, is_playlist = data_list
@@ -81,42 +84,45 @@ class App(QMainWindow):
             if(self._sender != None):
                 if(hasattr(self._sender, 'loading')):
                     self._sender.stop_loading() 
-            
-    def hideEvent(self, event) -> None:
-        
-        return super().hideEvent(event)
-    
-    def event(self, event) -> bool:
-        #if event.type() == Qt.WindowState.
-        return super().event(event)
     
     def closeEvent(self, event: QCloseEvent) -> None:
-        print('closing')
-        if(self._downloader._path != None):
+        """Handle the application close event
+        """
+        if self._downloader._path != None:
             shutil.rmtree(self._downloader._path)   
-        if(self._search.path != None):
+        if self._search.path != None:
             shutil.rmtree(self._search.path)
         return super().closeEvent(event)
     
+    @Slot()
     def make_search(self):
+        """Handle with search call"""
         self._ui.title_bar.search_loading.show()
         self._ui.title_bar.search_entry.clearFocus()
         self._search.update_query(self._ui.title_bar.search_entry.text())
         self._search.start()
     
+    @Slot()
     def _search_response_received(self, response: dict):
-        print('finished')
+        """Search receiver slot
+        """
         self._ui.title_bar.search_loading.close()
         self._ui.search_page.update_search_page(response) # update for dict
         self._ui.display_container.setCurrentWidget(self._ui.search_page)
-        
+    
+    @Slot()    
     def _play_requested(self, data):
+        """Handle with play request
+        """
         self._music_obj, self._sender = data
         self._downloader.update_title(f'{self._music_obj.title} - {self._music_obj.artist}')
         self._downloader.update_emit_play(True)
         self._downloader.start()
         
+    @Slot()
     def _play_playlist(self, data: list):
+        """Handle with play playlist request
+        """
         self._playlist_obj, self._sender = data
         
         if self._playlist_obj.music_list != None:
@@ -128,8 +134,10 @@ class App(QMainWindow):
             self._playlist_index = 0
     
     def _add_next_track_playlist(self, download_next = False):
+        """Download the playlist next track
+        """
         if self._playlist_obj != None:
-            if(self._playlist_obj != None and self._playlist_index < len(self._playlist_obj.music_list)):
+            if self._playlist_obj != None and self._playlist_index < len(self._playlist_obj.music_list):
                 if self._playlist_index < 2 or download_next:
                     self._music_obj = self._playlist_obj.music_list[self._playlist_index+1]
                     self._downloader.update_title(f'{self._music_obj.title} - \
@@ -141,19 +149,31 @@ class App(QMainWindow):
                 self._playlist_index = None
                 self._playlist_obj = None
             
+    @Slot()
     def _check_worker_busy(self):
-        if(not self._downloader.isRunning()):
+        """Check any music being downloaded
+        """
+        if not self._downloader.isRunning():
             self._add_next_track_playlist(download_next=True)
 
     def _exit_btn_config(self):
+        """Custom title bar exit button
+        """
         confirmation_dialog = SystemTrayDialog(self, info='close', action=self.close)
         confirmation_dialog.minimize_btn.clicked.connect(self._minimize_to_tray)
         confirmation_dialog.show()
-        
+    
+    @Slot()    
     def _minimize_btn_config(self):
+        """Custom title bar minimize button
+        """
         self.showMinimized()
     
+    @Slot()
     def _expand_btn_config(self):
+        """Custom title bar expand button,
+        handle with the rounded corners if maximized or not
+        """
         if self.isMaximized():
             self._ui.bg_container.setStyleSheet('background-color: rgba(0, 56, 71, 1);\
                                          border-radius: 10px')
@@ -176,7 +196,10 @@ class App(QMainWindow):
                                                         border-top-left-radius: 10px')
             self._ui.container_layout.setContentsMargins(0, 0, 0, 0)
     
+    @Slot()
     def _minimize_to_tray(self):
+        """Minimize to tray function
+        """
         #ensure pop up  is closed before hide
         sender = self.sender().parent()
         for i in range(100):
@@ -189,8 +212,12 @@ class App(QMainWindow):
         self.hide()
         self._ui.tray_icon.show()
     
+    @Slot()
     def _tray_icon_clicked(self, reason):
-        print('activated', reason)
+        """Handle with the position of miniplayer 
+        when tray icon clicked
+        """
+        # need improvement
         screen = QGuiApplication.primaryScreen()
         cursor_pos = QCursor.pos(screen)
         if(reason == QSystemTrayIcon.Trigger):
@@ -199,9 +226,12 @@ class App(QMainWindow):
                 self._ui.player.mini_player.move(QPoint((cursor_pos.x()-self._ui.player.mini_player.width()), cursor_pos.y()))
                 self._ui.player.mini_player.show()
                 self._ui.player.mini_player.activateWindow()
-                
+    
+    @Slot()            
     def _restore_sys_tray(self):
-        if(not self.isVisible()):
+        """Restore the window and hide tray icon
+        """
+        if not self.isVisible():
             self._ui.tray_icon.hide()
             self._ui.player.mini_player.hide()
             self.show()
