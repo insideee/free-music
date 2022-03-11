@@ -58,7 +58,6 @@ class Search(QThread):
         self._query_str = None
         
     def run(self):
-        print('Search Thread Started')
         if platform.system()=='Windows':
             asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
         data =  asyncio.run(make_request(*self._request))
@@ -73,17 +72,19 @@ class Search(QThread):
                     else:
                         response_playlist = response
         
-        try:                
-            valid_track_schema = self._validate_tracks_response(response_tracks, download_cover=True)
-            valid_playlist_schema = self._validate_playlist_response(response_playlist)
+        #try:                
+        valid_track_schema = self._validate_tracks_response(response_tracks, download_cover=True)
+        valid_playlist_schema = self._validate_playlist_response(response_playlist)
 
+        try:
             self.response_received.emit({'tracks': valid_track_schema,
                                          'playlists': valid_playlist_schema})
         except Exception as ex:
             # emit signal to error
+            # TODO: show some error on search
             self.response_received.emit({'tracks': [],
-                                         'playlists': []})      
-        
+                                         'playlists': []})   
+
     def update_query(self, query_str):
         self._query_str = query_str.replace(' ', '+')
         self._request = [{'endpoint': f'{self._search_endpoint}{self._query_str}'}, 
@@ -163,7 +164,7 @@ class Search(QThread):
                 for data in response['data']:
                     schema_response.append(schemas.PlaylistSchema.parse_obj(data))
 
-            if(schema_response != None):
+            if schema_response != None:
                 request = []
                 for schema in schema_response:
                     request.append({'endpoint': f'https://api.deezer.com/playlist/{schema.id}',
@@ -174,12 +175,17 @@ class Search(QThread):
                 for response in data:
                     if not 'error' in response:
                         for schema in schema_response:
-                            if schema.id == response['id']:
-                                aux = self._convert_to_dict(response['response'])['tracks']
-                                aux['total'] = len(aux['data'])
-                                track_response = self._validate_tracks_response(aux, download_cover=False)
-                                schema.music_list = track_response
-                                
+                            if not 'error' in response['response']:
+                                if schema.id == response['id']:
+                                    aux = self._convert_to_dict(response['response'])
+                                    aux = aux['tracks']
+                                    aux['total'] = len(aux['data'])
+                                    track_response = self._validate_tracks_response(aux, download_cover=False)
+                                    schema.music_list = track_response
+                            else:
+                                if schema.id == response['id']:
+                                    schema_response.remove(schema)
+
                 for schema in schema_response:
                     self._download_playlist_cover(schema)
                             
